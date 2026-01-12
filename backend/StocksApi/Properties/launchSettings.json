@@ -1,0 +1,19 @@
+{
+  "profiles": {
+    "StocksApi": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "http://localhost:60480"
+    },
+    "StartFrontend": {
+      "commandName": "Executable",
+      "executablePath": "cmd.exe",
+      "workingDirectory": "..\\..\\frontend",
+      "commandLineArgs": "/C npm run dev",
+      "launchBrowser": false
+    }
+  }
+}
