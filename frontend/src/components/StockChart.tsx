@@ -1,41 +1,31 @@
 import React, { useMemo } from 'react';
-import PropTypes from 'prop-types';
 import { Line } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
 
-function formatTimeLabel(iso) {
+function formatTimeLabel(iso: string) {
   const d = new Date(iso);
   return d.toISOString().slice(11, 16); // HH:MM
 }
 
-StockChart.propTypes = {
-  stockData: PropTypes.arrayOf(
-    PropTypes.shape({
-      dateTime: PropTypes.string,
-      price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    })
-  ),
-  loading: PropTypes.bool,
-  showPoints: PropTypes.bool,
-  showSMA: PropTypes.bool,
-  smaWindow: PropTypes.number,
-  error: PropTypes.any,
+type StockPoint = {
+  dateTime: string;
+  price: string | number;
 };
 
-StockChart.defaultProps = {
-  stockData: [],
-  loading: false,
-  showPoints: false,
-  showSMA: true,
-  smaWindow: 5,
-  error: null,
+type StockChartProps = {
+  stockData?: StockPoint[];
+  loading?: boolean;
+  showPoints?: boolean;
+  showSMA?: boolean;
+  smaWindow?: number;
+  error?: unknown;
 };
 
-function computeSMA(values, window) {
+function computeSMA(values: number[], window: number) {
   if (window <= 1) return values.slice();
-  const result = [];
+  const result: number[] = [];
   for (let i = 0; i < values.length; i++) {
     const start = Math.max(0, i - window + 1);
     const slice = values.slice(start, i + 1);
@@ -45,7 +35,14 @@ function computeSMA(values, window) {
   return result;
 }
 
-export default function StockChart({ stockData = [], loading, showPoints, showSMA, smaWindow, error }) {
+export default function StockChart({
+  stockData = [],
+  loading = false,
+  showPoints = false,
+  showSMA = true,
+  smaWindow = 5,
+  error = null,
+}: StockChartProps) {
   const chartData = useMemo(() => {
     if (!stockData || stockData.length === 0) return null;
     const points = stockData

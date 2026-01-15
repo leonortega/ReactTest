@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStocks } from './hooks/useStocks';
 import StockChart from './components/StockChart';
+import StockControls from './components/StockControls';
 import './App.css';
 import logo from './assets/logo.svg';
 
@@ -59,50 +60,15 @@ function App() {
           </div>
         </header>
 
-        <form
-          className="rs-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            refetch();
-          }}
-          aria-label="Stock query form"
-        >
-          <div>
-            <label className="field-label" htmlFor="company-input">
-              Company ID
-            </label>
-            <input
-              id="company-input"
-              aria-label="Company ID"
-              value={tempCompanyId}
-              onChange={(e) => setTempCompanyId(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="field-label" htmlFor="date-input">
-              Date
-            </label>
-            <input
-              id="date-input"
-              aria-label="Date"
-              type="date"
-              value={tempDate}
-              onChange={(e) => setTempDate(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <button
-              className="rs-btn"
-              type="submit"
-              aria-label="Refresh data"
-              disabled={!enabled || loading}
-            >
-              {loading ? 'Loading...' : 'Refresh now'}
-            </button>
-          </div>
-        </form>
+        <StockControls
+          tempCompanyId={tempCompanyId}
+          tempDate={tempDate}
+          onTempCompanyIdChange={setTempCompanyId}
+          onTempDateChange={setTempDate}
+          onSubmit={() => refetch()}
+          enabled={Boolean(companyId && date)}
+          loading={loading}
+        />
 
         <div className="last-fetch" aria-live="polite" aria-atomic="true">
           {lastFetchTime ? `Last API call: ${new Date(lastFetchTime).toLocaleString()}` : 'No API calls yet'}

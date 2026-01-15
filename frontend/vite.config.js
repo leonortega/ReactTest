@@ -6,6 +6,7 @@ export default ({ mode }) => {
 
   return defineConfig({
     plugins: [react()],
+    // Touching this line for TS migration consistency
     server: {
       port: 5173,
       strictPort: true,
