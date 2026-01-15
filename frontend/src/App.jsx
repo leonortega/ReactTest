@@ -1,43 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Line } from 'react-chartjs-2';
-import { Chart, registerables } from 'chart.js';
+import { useStocks } from './hooks/useStocks';
+import StockChart from './components/StockChart';
 import './App.css';
 import logo from './assets/logo.svg';
-
-Chart.register(...registerables);
-
-function formatTimeLabel(iso) {
-  const d = new Date(iso);
-  return d.toISOString().slice(11, 16); // HH:MM
-}
-
-function computeSMA(values, window) {
-  if (window <= 1) return values.slice();
-  const result = [];
-  for (let i = 0; i < values.length; i++) {
-    const start = Math.max(0, i - window + 1);
-    const slice = values.slice(start, i + 1);
-    const avg = slice.reduce((s, v) => s + v, 0) / slice.length;
-    result.push(Number(avg.toFixed(2)));
-  }
-  return result;
-}
-
-async function fetchStocks({ queryKey, signal }) {
-  const [_key, { companyId, date }] = queryKey;
-
-  const apiPath = `/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(date)}`;
-  const url = `${import.meta.env.VITE_API_BASE_URL}${apiPath.startsWith('/') ? '' : '/'}${apiPath}`;
-
-  const res = await fetch(url, { signal });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Request failed: ${res.status} ${body}`);
-  }
-  const data = await res.json();
-  return Array.isArray(data) ? data : [];
-}
 
 function App() {
   // committed values used for fetching
@@ -51,7 +16,7 @@ function App() {
   const [showPoints, setShowPoints] = useState(false);
   const [showSMA, setShowSMA] = useState(true);
   const [smaWindow, setSmaWindow] = useState(5);
-  const [lastFetchTime, setLastFetchTime] = useState(null);
+  
 
   // debounce timers
   const debounceRef = useRef(null);
@@ -72,96 +37,13 @@ function App() {
     return () => clearTimeout(debounceRef.current);
   }, [tempCompanyId, tempDate]);
 
-  // useQuery to fetch and background refetch every 5s
-  const enabled = Boolean(companyId && date);
-  const {
-    data: stockData = [],
-    status,
-    error,
-    refetch,
-    isFetching,
-  } = useQuery({
-    queryKey: ['stocks', { companyId, date }],
-    queryFn: fetchStocks,
-    enabled,
-    refetchInterval: 5000, // background refetch every 5s
-    refetchOnWindowFocus: false,
-    keepPreviousData: true,
-    retry: 1,
-    onSuccess: () => setLastFetchTime(new Date()),
-  });
-
-  const loading = status === 'loading' || isFetching;
-
-  const chartData = useMemo(() => {
-    if (!stockData || stockData.length === 0) return null;
-    const points = stockData
-      .map((p) => ({ t: new Date(p.dateTime), price: Number(p.price) }))
-      .sort((a, b) => a.t - b.t);
-
-    const labels = points.map((p) => formatTimeLabel(p.t.toISOString()));
-    const prices = points.map((p) => Number(p.price));
-    const sma = computeSMA(prices, smaWindow);
-
-    return { labels, prices, sma };
-  }, [stockData, smaWindow]);
-
-  const options = useMemo(
-    () => ({
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'top' },
-        tooltip: {
-          mode: 'index',
-          intersect: false,
-          callbacks: {
-            title: (items) => {
-              if (!items || !items[0]) return '';
-              return items[0].label;
-            },
-          },
-        },
-      },
-      interaction: { mode: 'nearest', axis: 'x', intersect: false },
-      scales: {
-        x: { display: true, title: { display: true, text: 'Time (UTC)' } },
-        y: { display: true, title: { display: true, text: 'Price' } },
-      },
-    }),
-    []
+  // data fetching moved to a hook to keep component focused on UI state
+  const { stockData = [], status, error, refetch, isFetching, lastFetchTime } = useStocks(
+    companyId,
+    date
   );
 
-  const dataForChart = useMemo(() => {
-    if (!chartData) return { labels: [], datasets: [] };
-
-    const datasets = [
-      {
-        label: 'Price',
-        data: chartData.prices,
-        borderColor: '#1f77b4',
-        backgroundColor: 'rgba(31,119,180,0.08)',
-        tension: 0.2,
-        pointRadius: showPoints ? 3 : 0,
-        borderWidth: 2,
-      },
-    ];
-
-    if (showSMA) {
-      datasets.push({
-        label: `SMA (${smaWindow})`,
-        data: chartData.sma,
-        borderColor: '#ff7f0e',
-        backgroundColor: 'rgba(255,127,14,0.05)',
-        tension: 0.2,
-        pointRadius: 0,
-        borderDash: [6, 4],
-        borderWidth: 2,
-      });
-    }
-
-    return { labels: chartData.labels, datasets };
-  }, [chartData, showPoints, showSMA, smaWindow]);
+  const loading = status === 'loading' || isFetching;
 
   return (
     <div className="rs-container">
@@ -223,9 +105,7 @@ function App() {
         </form>
 
         <div className="last-fetch" aria-live="polite" aria-atomic="true">
-          {lastFetchTime
-            ? `Last API call: ${new Date(lastFetchTime).toLocaleString()}`
-            : 'No API calls yet'}
+          {lastFetchTime ? `Last API call: ${new Date(lastFetchTime).toLocaleString()}` : 'No API calls yet'}
         </div>
 
         <div className="rs-controls">
@@ -260,19 +140,14 @@ function App() {
           )}
         </div>
 
-        <section className="rs-chart" aria-busy={loading} aria-label="Stock chart">
-          {error && (
-            <div className="error-message" role="alert">
-              <strong>Error:</strong> {String(error)}
-            </div>
-          )}
-
-          {chartData && chartData.labels.length > 0 ? (
-            <Line data={dataForChart} options={options} />
-          ) : (
-            !loading && <div className="no-data">No data</div>
-          )}
-        </section>
+        <StockChart
+          stockData={stockData}
+          loading={loading}
+          showPoints={showPoints}
+          showSMA={showSMA}
+          smaWindow={smaWindow}
+          error={error}
+        />
 
         <section className="rs-table" aria-label="Stock data table">
           {stockData && stockData.length > 0 && (
