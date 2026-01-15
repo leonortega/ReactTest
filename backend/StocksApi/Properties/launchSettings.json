@@ -11,9 +11,18 @@
     "StartFrontend": {
       "commandName": "Executable",
       "executablePath": "cmd.exe",
-      "workingDirectory": "..\\..\\frontend",
       "commandLineArgs": "/C npm run dev",
-      "launchBrowser": false
+      "workingDirectory": "..\\..\\frontend"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker",
+      "launchBrowser": true,
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
+      "environmentVariables": {
+        "ASPNETCORE_HTTP_PORTS": "8080"
+      },
+      "publishAllPorts": true,
+      "useSSL": false
     }
   }
 }

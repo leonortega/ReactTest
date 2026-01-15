@@ -9,6 +9,6 @@
     <BuildOutputFolder>$(MSBuildProjectDirectory)\dist</BuildOutputFolder>
   </PropertyGroup>
   <ItemGroup>
-    <None Include=".github\workflows\ci.yml" />
+    <Folder Include=".github\" />
   </ItemGroup>
 </Project>

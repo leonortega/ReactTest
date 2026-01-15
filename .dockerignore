@@ -1,0 +1,38 @@
+# Node / frontend
+node_modules
+frontend/node_modules
+frontend/dist
+dist
+build
+public/build
+
+# Dotnet build artifacts
+**/bin/
+**/obj/
+**/TestResults/
+
+# Environment and secrets
+.env
+.env.*
+
+# OS and editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs & temp
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+tmp/
+temp/
+
+# Docker-related
+Dockerfile
+**/.dockerignore
+
+# Misc
+coverage/
+reports/

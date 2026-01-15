@@ -26,7 +26,11 @@ function computeSMA(values, window) {
 
 async function fetchStocks({ queryKey, signal }) {
   const [_key, { companyId, date }] = queryKey;
-  const url = `/api/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(date)}`;
+  const rawBase = import.meta.env.VITE_API_BASE_URL || '';
+  const base = rawBase ? String(rawBase).replace(/\/+$/, '') : '';
+  const apiPath = `/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(date)}`;
+
+  let url = `http://localhost:80/api${apiPath}`;
   const res = await fetch(url, { signal });
   if (!res.ok) {
     const body = await res.text();

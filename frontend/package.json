@@ -11,6 +11,10 @@
     "format": "prettier --write \"src/**/*.{js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{js,jsx,json,css,md}\"",
     "audit:lighthouse": "lighthouse http://localhost:5173 --output html --output-path ./reports/lighthouse.html --chrome-flags=\"--headless\"",
+    "audit:lighthouse:docker": "lighthouse http://frontend:80 --port=9222 --output html --output-path ./reports/lighthouse.html --chrome-flags='--no-sandbox'",
+    "lint:docker": "docker-compose run --rm tools npm run lint",
+    "format:docker": "docker-compose run --rm tools npm run format",
+    "analyze:docker": "docker-compose run --rm tools node --eval \"require('child_process').execSync('npm run build && npx source-map-explorer dist/assets/index-*.js --html dist/reports/bundle.html', {stdio:'inherit'})\"",
     "preview": "vite preview"
   },
   "dependencies": {
