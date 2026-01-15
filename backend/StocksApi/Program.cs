@@ -4,6 +4,17 @@ using StocksApi.Stocks;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Allow frontend dev server to call this API (development only)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -24,6 +35,9 @@ if (app.Environment.IsDevelopment())
         options.RoutePrefix = string.Empty; // serve UI at '/'
     });
 }
+
+// Use CORS policy globally so browser clients (dev server) can call the API
+app.UseCors("AllowFrontend");
 
 //app.UseHttpsRedirection();
 

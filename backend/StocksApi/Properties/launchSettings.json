@@ -8,12 +8,6 @@
       },
       "applicationUrl": "http://localhost:60480"
     },
-    "StartFrontend": {
-      "commandName": "Executable",
-      "executablePath": "cmd.exe",
-      "commandLineArgs": "/C npm run dev",
-      "workingDirectory": "..\\..\\frontend"
-    },
     "Container (Dockerfile)": {
       "commandName": "Docker",
       "launchBrowser": true,

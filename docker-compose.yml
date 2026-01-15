@@ -6,7 +6,7 @@ services:
       context: ./backend/StocksApi
       dockerfile: Dockerfile
     ports:
-      - "60480:80"
+      - "60480:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
 
