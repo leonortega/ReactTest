@@ -14,28 +14,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL}
     ports:
       - "5173:80"
     depends_on:
       - stocksapi
-    environment:
-      - VITE_API_BASE_URL=/api
-
-  # Headless Chrome service to support Lighthouse / headless browser tasks
-  chrome:
-    image: alpeware/chrome-headless-stable:latest
-    shm_size: '2gb'
-    ports:
-      - "9222:9222"
-    # Chrome does not depend on frontend to avoid dependency cycle; start separately when needed.
-
-  # Tools container to run lint, format, analysis and other node-based tasks in the compose network
-  tools:
-    image: node:20
-    working_dir: /app
-    volumes:
-      - ./frontend:/app:delegated
-      - /app/node_modules
-    depends_on:
-      - frontend
-    entrypoint: ["tail", "-f", "/dev/null"]

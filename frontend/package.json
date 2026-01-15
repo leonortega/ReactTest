@@ -10,11 +10,6 @@
     "lint:fix": "eslint \"src/**/*.{js,jsx}\" --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{js,jsx,json,css,md}\"",
-    "audit:lighthouse": "lighthouse http://localhost:5173 --output html --output-path ./reports/lighthouse.html --chrome-flags=\"--headless\"",
-    "audit:lighthouse:docker": "lighthouse http://frontend:80 --port=9222 --output html --output-path ./reports/lighthouse.html --chrome-flags='--no-sandbox'",
-    "lint:docker": "docker-compose run --rm tools npm run lint",
-    "format:docker": "docker-compose run --rm tools npm run format",
-    "analyze:docker": "docker-compose run --rm tools node --eval \"require('child_process').execSync('npm run build && npx source-map-explorer dist/assets/index-*.js --html dist/reports/bundle.html', {stdio:'inherit'})\"",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -25,23 +20,11 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.1",
     "@types/react": "^19.2.8",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
-    "chrome-launcher": "^1.2.1",
-    "concurrently": "^9.2.1",
     "eslint": "^9.39.1",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-jsx-a11y": "^6.10.2",
-    "eslint-plugin-prettier": "^5.5.4",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.4.24",
-    "globals": "^16.5.0",
-    "lighthouse": "^13.0.1",
     "prettier": "^3.7.4",
-    "vite": "^7.2.4",
-    "wait-on": "^9.0.3"
+    "vite": "^7.2.4"
   }
 }

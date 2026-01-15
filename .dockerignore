@@ -1,8 +1,8 @@
 # Node / frontend
 node_modules
 frontend/node_modules
-frontend/dist
 dist
+frontend/dist
 build
 public/build
 
