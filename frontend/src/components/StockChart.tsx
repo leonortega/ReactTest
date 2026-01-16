@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
-import { Chart, registerables } from 'chart.js';
+import { Chart, registerables, ChartOptions, ChartData } from 'chart.js';
+import type { StockPoint, ApiError } from '../hooks/useStocks';
 
 Chart.register(...registerables);
 
@@ -9,18 +10,13 @@ function formatTimeLabel(iso: string) {
   return d.toISOString().slice(11, 16); // HH:MM
 }
 
-type StockPoint = {
-  dateTime: string;
-  price: string | number;
-};
-
 type StockChartProps = {
   stockData?: StockPoint[];
   loading?: boolean;
   showPoints?: boolean;
   showSMA?: boolean;
   smaWindow?: number;
-  error?: unknown;
+  error?: ApiError | null;
 };
 
 function computeSMA(values: number[], window: number) {
@@ -47,7 +43,7 @@ export default function StockChart({
     if (!stockData || stockData.length === 0) return null;
     const points = stockData
       .map((p) => ({ t: new Date(p.dateTime), price: Number(p.price) }))
-      .sort((a, b) => a.t - b.t);
+      .sort((a, b) => a.t.getTime() - b.t.getTime());
 
     const labels = points.map((p) => formatTimeLabel(p.t.toISOString()));
     const prices = points.map((p) => Number(p.price));
@@ -56,7 +52,7 @@ export default function StockChart({
     return { labels, prices, sma };
   }, [stockData, smaWindow]);
 
-  const options = useMemo(
+  const options: ChartOptions<'line'> = useMemo(
     () => ({
       responsive: true,
       maintainAspectRatio: false,
@@ -68,7 +64,7 @@ export default function StockChart({
           callbacks: {
             title: (items) => {
               if (!items || !items[0]) return '';
-              return items[0].label;
+              return String(items[0].label);
             },
           },
         },
@@ -82,10 +78,10 @@ export default function StockChart({
     []
   );
 
-  const dataForChart = useMemo(() => {
+  const dataForChart: ChartData<'line', number[], string> = useMemo(() => {
     if (!chartData) return { labels: [], datasets: [] };
 
-    const datasets = [
+    const datasets: any[] = [
       {
         label: 'Price',
         data: chartData.prices,
@@ -105,6 +101,7 @@ export default function StockChart({
         backgroundColor: 'rgba(255,127,14,0.05)',
         tension: 0.2,
         pointRadius: 0,
+        // Chart.js typing doesn't include borderDash on dataset in this version; use any-typed datasets above
         borderDash: [6, 4],
         borderWidth: 2,
       });

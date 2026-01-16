@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStocks } from './hooks/useStocks';
 import StockChart from './components/StockChart';
 import StockControls from './components/StockControls';
@@ -20,7 +20,7 @@ function App() {
   
 
   // debounce timers
-  const debounceRef = useRef(null);
+  const debounceRef = useRef<number | undefined>(undefined);
 
   // update committed values after user stops typing for 600ms
   useEffect(() => {
@@ -43,6 +43,14 @@ function App() {
     companyId,
     date
   );
+
+  const [localLastFetchTime, setLocalLastFetchTime] = useState<Date | null>(null);
+
+  useEffect(() => {
+    if (!isFetching && status === 'success') {
+      setLocalLastFetchTime(new Date());
+    }
+  }, [isFetching, status, stockData]);
 
   const loading = status === 'loading' || isFetching;
 
@@ -71,7 +79,9 @@ function App() {
         />
 
         <div className="last-fetch" aria-live="polite" aria-atomic="true">
-          {lastFetchTime ? `Last API call: ${new Date(lastFetchTime).toLocaleString()}` : 'No API calls yet'}
+          {(localLastFetchTime || lastFetchTime)
+            ? `Last API call: ${new Date(localLastFetchTime ?? lastFetchTime!).toLocaleString()}`
+            : 'No API calls yet'}
         </div>
 
         <div className="rs-controls">

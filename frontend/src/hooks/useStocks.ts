@@ -1,64 +1,81 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect, useCallback } from 'react';
 
-export type StockPoint = {
+export interface StockData {
   dateTime: string;
-  price: string | number;
-};
+  price: number;
+}
 
-export type ApiError = {
-  status: number;
-  message: string;
-  body?: string;
-};
+// compatibility types used by components
+export type StockPoint = StockData;
+export type ApiError = string | null;
 
-export type UseStocksResult = {
-  stockData: StockPoint[];
-  status: 'idle' | 'loading' | 'error' | 'success';
-  error: ApiError | null;
+export interface UseStocksResult {
+  stockData: StockData[];
+  status: 'idle' | 'loading' | 'success' | 'error';
+  error: string | null;
   refetch: () => void;
   isFetching: boolean;
-  lastFetchTime: Date | null;
-};
-
-async function fetchStocks({ queryKey, signal }: { queryKey: unknown[]; signal: AbortSignal }) {
-  const [_key, { companyId, date }] = queryKey as [string, { companyId: string; date: string }];
-
-  const apiPath = `/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(date)}`;
-  const url = `${import.meta.env.VITE_API_BASE_URL}${apiPath.startsWith('/') ? '' : '/'}${apiPath}`;
-
-  const res = await fetch(url, { signal });
-  if (!res.ok) {
-    const body = await res.text();
-    const apiErr: ApiError = { status: res.status, message: res.statusText || 'Request failed', body };
-    throw apiErr;
-  }
-
-  const data = await res.json();
-  return Array.isArray(data) ? data : [];
+  lastFetchTime: number | null;
 }
 
 export function useStocks(companyId: string, date: string): UseStocksResult {
-  const [lastFetchTime, setLastFetchTime] = useState<Date | null>(null);
+  const [stockData, setStockData] = useState<StockData[]>([]);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [error, setError] = useState<string | null>(null);
+  const [isFetching, setIsFetching] = useState(false);
+  const [lastFetchTime, setLastFetchTime] = useState<number | null>(null);
 
-  const enabled = Boolean(companyId && date);
-  const query = useQuery<StockPoint[], ApiError, StockPoint[]>({
-    queryKey: ['stocks', { companyId, date }],
-    queryFn: fetchStocks,
-    enabled,
-    refetchInterval: 5000,
-    refetchOnWindowFocus: false,
-    keepPreviousData: true,
-    retry: 1,
-    onSuccess: () => setLastFetchTime(new Date()),
-  });
+  const fetchStocks = useCallback(() => {
+    setStatus('loading');
+    setIsFetching(true);
+    setError(null);
+
+    const env = (import.meta as any).env;
+    const base = env && env.VITE_API_BASE_URL ? String(env.VITE_API_BASE_URL) : '';
+
+    const url = base
+      ? `${base.replace(/\/$/, '')}/stocks/${companyId}?date=${date}`
+      : `/stocks/${companyId}?date=${date}`;
+
+    fetch(url)
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to fetch stocks');
+        return res.json();
+      })
+      .then((data) => {
+        setStockData(data);
+        setStatus('success');
+        setLastFetchTime(Date.now());
+      })
+      .catch((err) => {
+        setError(err.message);
+        setStatus('error');
+      })
+      .finally(() => setIsFetching(false));
+  }, [companyId, date]);
+
+  useEffect(() => {
+    if (companyId && date) {
+      fetchStocks();
+    }
+  }, [companyId, date, fetchStocks]);
+
+  useEffect(() => {
+    if (!(companyId && date)) return;
+
+    const id = setInterval(() => {
+      fetchStocks();
+    }, 5000);
+
+    return () => clearInterval(id);
+  }, [companyId, date, fetchStocks]);
 
   return {
-    stockData: query.data ?? [],
-    status: query.status as UseStocksResult['status'],
-    error: (query.error as ApiError) ?? null,
-    refetch: query.refetch as () => void,
-    isFetching: query.isFetching,
+    stockData,
+    status,
+    error,
+    refetch: fetchStocks,
+    isFetching,
     lastFetchTime,
   };
 }

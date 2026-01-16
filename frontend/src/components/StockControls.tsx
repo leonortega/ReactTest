@@ -3,8 +3,8 @@ import React from 'react';
 export interface StockControlsProps {
   tempCompanyId: string;
   tempDate: string;
-  onTempCompanyIdChange: (v: string) => void;
-  onTempDateChange: (v: string) => void;
+  onTempCompanyIdChange: React.Dispatch<React.SetStateAction<string>>;
+  onTempDateChange: React.Dispatch<React.SetStateAction<string>>;
   onSubmit: () => void;
   enabled: boolean;
   loading: boolean;
@@ -35,7 +35,7 @@ export default function StockControls({
         <input
           id="company-input"
           aria-label="Company ID"
-          value={tempCompanyId}
+          value={tempCompanyId || ''}
           onChange={(e) => onTempCompanyIdChange(e.target.value)}
         />
       </div>
@@ -48,7 +48,7 @@ export default function StockControls({
           id="date-input"
           aria-label="Date"
           type="date"
-          value={tempDate}
+          value={tempDate || ''}
           onChange={(e) => onTempDateChange(e.target.value)}
         />
       </div>
