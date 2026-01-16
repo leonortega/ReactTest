@@ -1,0 +1,149 @@
+name: CI/CD — Build Compose, Push to ACR, Deploy to Azure
+
+on:
+  push:
+    branches: [ "dev" ]
+  workflow_dispatch:
+
+env:
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy infra Bicep (creates App Service Plan + Web App + assign AcrPull)
+        run: |
+          az deployment group create \
+            --resource-group ${{ secrets.RESOURCE_GROUP }} \
+            --template-file infra/main.bicep \
+            --parameters webAppName=${{ secrets.WEBAPP_NAME }} appServicePlanName=${{ secrets.APP_SERVICE_PLAN }} acrName=${{ secrets.ACR_NAME }} location=${{ secrets.LOCATION }}
+
+      - name: Ensure ACR accessible (login)
+        run: |
+          az acr login --name ${{ secrets.ACR_NAME }}
+
+      - name: Build & push stocksapi image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend/StocksApi
+          file: ./backend/StocksApi/Dockerfile
+          push: true
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/stocksapi:${{ env.IMAGE_TAG }}
+
+      - name: Build & push frontend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/frontend:${{ env.IMAGE_TAG }}
+          build-args: |
+            VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
+
+      - name: Create deploy compose file (references ACR images)
+        run: |
+          IMAGE_TAG=${IMAGE_TAG:-${{ github.sha }}}
+          cat > deploy-compose.yml <<EOF
+          version: '3.8'
+          services:
+            stocksapi:
+              image: ${{ secrets.ACR_LOGIN_SERVER }}/stocksapi:${IMAGE_TAG}
+              ports:
+                - "60480:80"
+              networks:
+                - app-network
+
+            frontend:
+              image: ${{ secrets.ACR_LOGIN_SERVER }}/frontend:${IMAGE_TAG}
+              ports:
+                - "5173:80"
+              depends_on:
+                - stocksapi
+              networks:
+                - app-network
+
+          networks:
+            app-network:
+              driver: bridge
+          EOF
+          echo "deploy-compose.yml created"
+          sed -n '1,200p' deploy-compose.yml
+
+      - name: Configure Web App to pull from ACR (use managed identity if available)
+        run: |
+          RG=${{ secrets.RESOURCE_GROUP }}
+          WEBAPP=${{ secrets.WEBAPP_NAME }}
+          ACR_LOGIN=${{ secrets.ACR_LOGIN_SERVER }}
+
+          # Set registry URL app setting; if managed identity has AcrPull role assigned by Bicep, no creds needed
+          az webapp config appsettings set \
+            --resource-group "$RG" \
+            --name "$WEBAPP" \
+            --settings DOCKER_REGISTRY_SERVER_URL="https://$ACR_LOGIN" || true
+
+      - name: Deploy multi-container (upload compose)
+        run: |
+          RG=${{ secrets.RESOURCE_GROUP }}
+          WEBAPP=${{ secrets.WEBAPP_NAME }}
+          az webapp config container set \
+            --resource-group "$RG" \
+            --name "$WEBAPP" \
+            --multicontainer-config-type compose \
+            --multicontainer-config-file deploy-compose.yml
+
+      - name: Restart Web App
+        run: az webapp restart --resource-group ${{ secrets.RESOURCE_GROUP }} --name ${{ secrets.WEBAPP_NAME }}
+
+  build-and-deploy-with-acr-creds:
+    runs-on: ubuntu-latest
+    needs: build-and-deploy
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Ensure ACR accessible (login)
+        run: |
+          az acr login --name ${{ secrets.ACR_NAME }}
+
+      - name: Configure Web App with ACR credentials (alternate flow)
+        run: |
+          RG=${{ secrets.RESOURCE_GROUP }}
+          WEBAPP=${{ secrets.WEBAPP_NAME }}
+          ACR_LOGIN=${{ secrets.ACR_LOGIN_SERVER }}
+          ACR_USER=${{ secrets.ACR_USERNAME }}
+          ACR_PASS=${{ secrets.ACR_PASSWORD }}
+
+          az webapp config appsettings set \
+            --resource-group "$RG" \
+            --name "$WEBAPP" \
+            --settings \
+              DOCKER_REGISTRY_SERVER_URL="https://$ACR_LOGIN" \
+              DOCKER_REGISTRY_SERVER_USERNAME="$ACR_USER" \
+              DOCKER_REGISTRY_SERVER_PASSWORD="$ACR_PASS"
+
+      - name: Deploy multi-container (upload compose) - using registry creds
+        run: |
+          RG=${{ secrets.RESOURCE_GROUP }}
+          WEBAPP=${{ secrets.WEBAPP_NAME }}
+          az webapp config container set \
+            --resource-group "$RG" \
+            --name "$WEBAPP" \
+            --multicontainer-config-type compose \
+            --multicontainer-config-file deploy-compose.yml
+
+      - name: Restart Web App
+        run: az webapp restart --resource-group ${{ secrets.RESOURCE_GROUP }} --name ${{ secrets.WEBAPP_NAME }}
