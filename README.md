@@ -1,15 +1,61 @@
-This workspace contains two new projects added by the assistant:
+Overview
 
-- `backend/StocksApi` - .NET 7 Web API implementing a vertical-slice pattern using MediatR. Exposes `GET /api/stocks/{companyId}?dateTime=...` to return stock values.
-- `frontend` - React 19.2 application (Vite) that calls the backend API.
+This repository contains two projects (backend and frontend) used for a small stocks demo and tooling to run them locally or in Docker.
 
-To run the backend:
+Projects
 
-- Open `backend/StocksApi` in Visual Studio or run `dotnet run` in that directory.
-- The API runs on https by default; for local quick testing you may want to configure launch settings or use http.
+- `backend/StocksApi` - .NET 10 Web API that implements a vertical-slice style with MediatR. It exposes a stocks endpoint:
+  - `GET /api/stocks/{companyId}?date={YYYY-MM-DD}` — returns an array of stock points for the requested company and date.
 
-To run the frontend:
+- `frontend` - React (Vite) application that visualizes stock data. The frontend uses Vite and reads an environment variable `VITE_API_BASE_URL` (or `VITE_API_BASE`) to determine the backend base URL at runtime/build time.
 
-- `cd frontend` and run `npm install` then `npm run dev`.
+Local development
 
-Note: The frontend expects backend at http://localhost:5000; adjust as needed.
+Backend
+
+- Open `backend/StocksApi` in Visual Studio / VS Code or run from the terminal:
+
+```bash
+cd backend/StocksApi
+dotnet run
+```
+
+- By default `dotnet run` may start with HTTPS in development. For quick local testing you can configure the launch settings in the project or use HTTP URLs.
+
+Frontend
+
+- Run the frontend dev server:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+- Dev proxy: the frontend Vite config supports a proxy to the API when `VITE_API_BASE_URL` is set in the environment or `.env` file. The project currently uses `VITE_API_BASE_URL` in `frontend/.env` to point the dev server to the backend.
+
+Environment
+
+- Frontend reads `VITE_API_BASE_URL` (or `VITE_API_BASE`) to configure the API base URL. Example `.env`:
+
+```
+VITE_API_BASE_URL=http://localhost:5000
+```
+
+Docker deployment
+
+This repository already includes Dockerfiles and a `docker-compose.yml` to build and run the backend and frontend together.
+
+To build and start both services with the provided compose file:
+
+```bash
+# using Docker Compose V2
+docker compose up --build
+
+# or with the legacy docker-compose
+docker-compose up --build
+```
+
+The compose file configures the API base URL for the frontend (via `VITE_API_BASE_URL` or similar) and exposes the configured ports. Check `docker-compose.yml` for the exact ports and service names used in this workspace.
+
+If you prefer to build and run images manually you can still use the individual `Dockerfile`s in `backend/StocksApi` and `frontend` — the compose setup is provided for convenience and reproducibility.

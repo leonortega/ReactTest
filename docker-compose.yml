@@ -1,16 +1,18 @@
-version: '3.8'
-
 services:
   stocksapi:
+    image: stocksapi:dev
     build:
       context: ./backend/StocksApi
       dockerfile: Dockerfile
-    ports:
-      - "60480:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+    ports:
+      - "60480:80"
+    networks:
+      - app-network
 
   frontend:
+    image: frontend:dev
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -20,3 +22,9 @@ services:
       - "5173:80"
     depends_on:
       - stocksapi
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
