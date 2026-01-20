@@ -1,4 +1,4 @@
-name: CI/CD — Build Compose, Push to ACR, Deploy to Azure
+name: CI/CD – Build Compose, Push to ACR, Deploy to Azure
 
 on:
   push:
@@ -22,7 +22,6 @@ jobs:
 
       - name: Deploy infra Bicep (creates App Service Plan + Web App + assign AcrPull)
         run: |
-          # Build parameter list (template only accepts webAppName, appServicePlanName, location)
           PARAMS="webAppName=${{ secrets.WEBAPP_NAME }} appServicePlanName=${{ secrets.APP_SERVICE_PLAN }} location=${{ secrets.LOCATION }}"
 
           echo "Deploying Bicep with parameters: $PARAMS"
@@ -39,33 +38,48 @@ jobs:
           ACR_RG=${{ secrets.ACR_RESOURCE_GROUP }}
 
           echo "Checking Web App managed identity..."
-          PRINCIPAL_ID=$(az webapp identity show --name "$WEBAPP" --resource-group "$RG" --query principalId -o tsv || true)
+          PRINCIPAL_ID=$(az webapp identity show \
+            --name "$WEBAPP" \
+            --resource-group "$RG" \
+            --query principalId -o tsv || true)
+
           if [ -z "$PRINCIPAL_ID" ] || [ "$PRINCIPAL_ID" = "null" ]; then
-            echo "ERROR: Web App does not have a system-assigned identity enabled. Enable it in the portal or via template."
+            echo "ERROR: Web App does not have a system-assigned identity."
             exit 1
           fi
 
           if [ -z "$ACR_RG" ]; then
-            echo "ACR_RESOURCE_GROUP not provided as a secret; attempting to discover ACR resource group"
+            echo "Discovering ACR resource group..."
             ACR_RG=$(az acr show --name "$ACR_NAME" --query resourceGroup -o tsv || true)
           fi
 
           if [ -z "$ACR_RG" ]; then
-            echo "ERROR: Could not determine ACR resource group. Set the ACR_RESOURCE_GROUP secret or ensure the runner can access the registry."
+            echo "ERROR: Could not determine ACR resource group."
             exit 1
           fi
 
-          SUBSCRIPTION_ID=$(az account show --query id -o tsv)
-          SCOPE="/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$ACR_RG/providers/Microsoft.ContainerRegistry/registries/$ACR_NAME"
+          ACR_ID=$(az acr show \
+            --name "$ACR_NAME" \
+            --resource-group "$ACR_RG" \
+            --query id -o tsv)
 
-          echo "Checking existing AcrPull role assignment..."
-          EXISTS=$(az role assignment list --assignee "$PRINCIPAL_ID" --scope "$SCOPE" --query "length([?roleDefinitionName=='AcrPull'])" -o tsv || true)
+          echo "Using ACR scope: $ACR_ID"
+
+          EXISTS=$(az role assignment list \
+            --assignee-object-id "$PRINCIPAL_ID" \
+            --assignee-principal-type ServicePrincipal \
+            --scope "$ACR_ID" \
+            --query "length([?roleDefinitionName=='AcrPull'])" -o tsv || true)
+
           if [ "$EXISTS" = "0" ] || [ -z "$EXISTS" ]; then
-            echo "Creating AcrPull role assignment for principal $PRINCIPAL_ID on $SCOPE"
-            az role assignment create --assignee "$PRINCIPAL_ID" --role AcrPull --scope "$SCOPE"
-            echo "AcrPull role assignment created"
+            echo "Creating AcrPull role assignment..."
+            az role assignment create \
+              --assignee-object-id "$PRINCIPAL_ID" \
+              --assignee-principal-type ServicePrincipal \
+              --role AcrPull \
+              --scope "$ACR_ID"
           else
-            echo "AcrPull already assigned to the Web App identity on the ACR"
+            echo "AcrPull already assigned"
           fi
 
       - name: Ensure ACR accessible (login)
@@ -93,124 +107,62 @@ jobs:
       - name: Create deploy compose file (references ACR images)
         run: |
           IMAGE_TAG=${IMAGE_TAG:-${{ github.sha }}}
+
           cat > deploy-compose.yml <<EOF
-          version: '3.8'
-          services:
-            stocksapi:
-              image: ${{ secrets.ACR_LOGIN_SERVER }}/stocksapi:${IMAGE_TAG}
-              ports:
-                - "60480:80"
-              networks:
-                - app-network
+version: '3.8'
+services:
+  stocksapi:
+    image: ${{ secrets.ACR_LOGIN_SERVER }}/stocksapi:${IMAGE_TAG}
+    ports:
+      - "60480:80"
 
-            frontend:
-              image: ${{ secrets.ACR_LOGIN_SERVER }}/frontend:${IMAGE_TAG}
-              ports:
-                - "5173:80"
-              depends_on:
-                - stocksapi
-              networks:
-                - app-network
+  frontend:
+    image: ${{ secrets.ACR_LOGIN_SERVER }}/frontend:${IMAGE_TAG}
+    ports:
+      - "5173:80"
+    depends_on:
+      - stocksapi
+EOF
 
-          networks:
-            app-network:
-              driver: bridge
-          EOF
-          # Strip common leading indentation introduced by YAML block indentation
-          python - <<'PY'
-            import re
-            s=open('deploy-compose.yml').read().splitlines()
-            nonempty=[len(re.match(r'^[ ]*', l).group(0)) for l in s if l.strip()]
-            m=min(nonempty) if nonempty else 0
-            open('deploy-compose.yml','w').write("\n".join(l[m:] for l in s)+("\n" if s else ""))
-            PY
-                      echo "deploy-compose.yml created"
-                      sed -n '1,200p' deploy-compose.yml
+          echo "deploy-compose.yml created"
+          sed -n '1,200p' deploy-compose.yml
 
       - name: Validate deploy-compose.yml
         run: |
-          # Basic sanity checks for the generated compose file
-          python - <<'PY'
-            import re,sys
-            txt=open('deploy-compose.yml').read()
-            if not re.search(r'^version:\s*', txt, flags=re.M):
-                print('ERROR: deploy-compose.yml missing top-level "version:"')
-                sys.exit(1)
-            if not re.search(r'^services:\s*', txt, flags=re.M):
-                print('ERROR: deploy-compose.yml missing top-level "services:"')
-                sys.exit(1)
-            if not re.search(r'stocksapi:', txt) or not re.search(r'frontend:', txt):
-                print('ERROR: deploy-compose.yml missing expected services (stocksapi, frontend)')
-                sys.exit(1)
-            print('deploy-compose.yml basic validation passed')
-            PY
+          python <<'PY'
+import re, sys
 
-      - name: Configure Web App to pull from ACR (use managed identity if available)
+txt = open('deploy-compose.yml').read()
+
+if not re.search(r'^version:\s*', txt, flags=re.M):
+    sys.exit("ERROR: missing version")
+
+if not re.search(r'^services:\s*', txt, flags=re.M):
+    sys.exit("ERROR: missing services")
+
+if "stocksapi:" not in txt or "frontend:" not in txt:
+    sys.exit("ERROR: missing expected services")
+
+print("deploy-compose.yml validation passed")
+PY
+
+      - name: Configure Web App to pull from ACR
         run: |
-          RG=${{ secrets.RESOURCE_GROUP }}
-          WEBAPP=${{ secrets.WEBAPP_NAME }}
-          ACR_LOGIN=${{ secrets.ACR_LOGIN_SERVER }}
-
-          # Set registry URL app setting; if managed identity has AcrPull role assigned by Bicep, no creds needed
           az webapp config appsettings set \
-            --resource-group "$RG" \
-            --name "$WEBAPP" \
-            --settings DOCKER_REGISTRY_SERVER_URL="https://$ACR_LOGIN" || true
+            --resource-group ${{ secrets.RESOURCE_GROUP }} \
+            --name ${{ secrets.WEBAPP_NAME }} \
+            --settings DOCKER_REGISTRY_SERVER_URL="https://${{ secrets.ACR_LOGIN_SERVER }}"
 
       - name: Deploy multi-container (upload compose)
         run: |
-          RG=${{ secrets.RESOURCE_GROUP }}
-          WEBAPP=${{ secrets.WEBAPP_NAME }}
           az webapp config container set \
-            --resource-group "$RG" \
-            --name "$WEBAPP" \
+            --resource-group ${{ secrets.RESOURCE_GROUP }} \
+            --name ${{ secrets.WEBAPP_NAME }} \
             --multicontainer-config-type compose \
             --multicontainer-config-file deploy-compose.yml
 
       - name: Restart Web App
-        run: az webapp restart --resource-group ${{ secrets.RESOURCE_GROUP }} --name ${{ secrets.WEBAPP_NAME }}
-
-  build-and-deploy-with-acr-creds:
-    runs-on: ubuntu-latest
-    needs: build-and-deploy
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Login to Azure
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Ensure ACR accessible (login)
         run: |
-          az acr login --name ${{ secrets.ACR_NAME }}
-
-      - name: Configure Web App with ACR credentials (alternate flow)
-        run: |
-          RG=${{ secrets.RESOURCE_GROUP }}
-          WEBAPP=${{ secrets.WEBAPP_NAME }}
-          ACR_LOGIN=${{ secrets.ACR_LOGIN_SERVER }}
-          ACR_USER=${{ secrets.ACR_USERNAME }}
-          ACR_PASS=${{ secrets.ACR_PASSWORD }}
-
-          az webapp config appsettings set \
-            --resource-group "$RG" \
-            --name "$WEBAPP" \
-            --settings \
-              DOCKER_REGISTRY_SERVER_URL="https://$ACR_LOGIN" \
-              DOCKER_REGISTRY_SERVER_USERNAME="$ACR_USER" \
-              DOCKER_REGISTRY_SERVER_PASSWORD="$ACR_PASS"
-
-      - name: Deploy multi-container (upload compose) - using registry creds
-        run: |
-          RG=${{ secrets.RESOURCE_GROUP }}
-          WEBAPP=${{ secrets.WEBAPP_NAME }}
-          az webapp config container set \
-            --resource-group "$RG" \
-            --name "$WEBAPP" \
-            --multicontainer-config-type compose \
-            --multicontainer-config-file deploy-compose.yml
-
-      - name: Restart Web App
-        run: az webapp restart --resource-group ${{ secrets.RESOURCE_GROUP }} --name ${{ secrets.WEBAPP_NAME }}```
+          az webapp restart \
+            --resource-group ${{ secrets.RESOURCE_GROUP }} \
+            --name ${{ secrets.WEBAPP_NAME }}
