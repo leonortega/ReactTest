@@ -34,6 +34,43 @@ jobs:
             --template-file infra/main.bicep \
             --parameters $PARAMS
 
+      - name: Assign AcrPull to Web App identity (if needed)
+        run: |
+          RG=${{ secrets.RESOURCE_GROUP }}
+          WEBAPP=${{ secrets.WEBAPP_NAME }}
+          ACR_NAME=${{ secrets.ACR_NAME }}
+          ACR_RG=${{ secrets.ACR_RESOURCE_GROUP }}
+
+          echo "Checking Web App managed identity..."
+          PRINCIPAL_ID=$(az webapp identity show --name "$WEBAPP" --resource-group "$RG" --query principalId -o tsv || true)
+          if [ -z "$PRINCIPAL_ID" ] || [ "$PRINCIPAL_ID" = "null" ]; then
+            echo "ERROR: Web App does not have a system-assigned identity enabled. Enable it in the portal or via template."
+            exit 1
+          fi
+
+          if [ -z "$ACR_RG" ]; then
+            echo "ACR_RESOURCE_GROUP not provided as a secret; attempting to discover ACR resource group"
+            ACR_RG=$(az acr show --name "$ACR_NAME" --query resourceGroup -o tsv || true)
+          fi
+
+          if [ -z "$ACR_RG" ]; then
+            echo "ERROR: Could not determine ACR resource group. Set the ACR_RESOURCE_GROUP secret or ensure the runner can access the registry."
+            exit 1
+          fi
+
+          SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+          SCOPE="/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$ACR_RG/providers/Microsoft.ContainerRegistry/registries/$ACR_NAME"
+
+          echo "Checking existing AcrPull role assignment..."
+          EXISTS=$(az role assignment list --assignee "$PRINCIPAL_ID" --scope "$SCOPE" --query "length([?roleDefinitionName=='AcrPull'])" -o tsv || true)
+          if [ "$EXISTS" = "0" ] || [ -z "$EXISTS" ]; then
+            echo "Creating AcrPull role assignment for principal $PRINCIPAL_ID on $SCOPE"
+            az role assignment create --assignee "$PRINCIPAL_ID" --role AcrPull --scope "$SCOPE"
+            echo "AcrPull role assignment created"
+          else
+            echo "AcrPull already assigned to the Web App identity on the ACR"
+          fi
+
       - name: Ensure ACR accessible (login)
         run: |
           az acr login --name ${{ secrets.ACR_NAME }}

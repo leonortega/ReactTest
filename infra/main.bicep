@@ -42,18 +42,9 @@ resource web 'Microsoft.Web/sites@2022-03-01' = {
   }
 }
 
-// Assign AcrPull to the Web App's system assigned identity so App Service can pull images from the ACR
-// This operation targets the ACR's resource group scope, so we implement it via a module
-module assignAcrPull 'assignAcrPull.bicep' = {
-  name: 'assignAcrPull'
-  scope: resourceGroup(acrResourceGroup)
-  params: {
-    acrName: acrName
-    webPrincipalId: web.identity.principalId
-  }
-  dependsOn: [
-    web
-  ]
-}
+// Note: role assignment to allow the Web App identity to pull from ACR is
+// intentionally not performed in this template to avoid cross-scope deployment
+// issues. The CI workflow or an administrator should assign the `AcrPull` role
+// to the Web App's system-assigned identity on the ACR resource.
 
 output webAppPrincipalId string = web.identity.principalId
