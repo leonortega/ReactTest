@@ -23,7 +23,7 @@ jobs:
       - name: Deploy infra Bicep (creates App Service Plan + Web App + assign AcrPull)
         run: |
           # Build parameter list and include acrResourceGroup only when provided
-          PARAMS="webAppName=${{ secrets.WEBAPP_NAME }} appServicePlanName=${{ secrets.APP_SERVICE_PLAN }} acrName=${{ secrets.ACR_NAME }} location=${{ secrets.LOCATION }}"
+          PARAMS="webAppName=${{ secrets.WEBAPP_NAME }} appServicePlanName=${{ secrets.APP_SERVICE_PLAN }} location=${{ secrets.LOCATION }}"
           if [ -n "${{ secrets.ACR_RESOURCE_GROUP }}" ]; then
             PARAMS="$PARAMS acrResourceGroup=${{ secrets.ACR_RESOURCE_GROUP }}"
           fi
