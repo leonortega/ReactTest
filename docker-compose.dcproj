@@ -12,7 +12,6 @@
     <None Include=".env" />
     <None Include=".github\copilot-instructions.md" />
     <None Include=".github\workflows\deploy-azure.yml" />
-    <None Include="bicep infra\main.bicep" />
     <None Include="docker-compose.override.yml">
       <DependentUpon>docker-compose.yml</DependentUpon>
     </None>

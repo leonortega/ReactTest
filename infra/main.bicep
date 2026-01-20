@@ -10,8 +10,13 @@ param location string = resourceGroup().location
 @description('Name of an existing Azure Container Registry')
 param acrName string
 
+@description('Resource group where the existing ACR lives (defaults to the current resource group)')
+param acrResourceGroup string = resourceGroup().name
+
 // Reference existing ACR
+// Reference existing ACR (explicit resource group scope)
 resource acr 'Microsoft.ContainerRegistry/registries@2022-02-01' existing = {
+  scope: resourceGroup(acrResourceGroup)
   name: acrName
 }
 
