@@ -25,7 +25,7 @@ jobs:
           az deployment group create \
             --resource-group ${{ secrets.RESOURCE_GROUP }} \
             --template-file infra/main.bicep \
-            --parameters webAppName=${{ secrets.WEBAPP_NAME }} appServicePlanName=${{ secrets.APP_SERVICE_PLAN }} acrName=${{ secrets.ACR_NAME }} location=${{ secrets.LOCATION }}
+            --parameters webAppName=${{ secrets.WEBAPP_NAME }} appServicePlanName=${{ secrets.APP_SERVICE_PLAN }} acrName=${{ secrets.ACR_NAME }} acrResourceGroup=${{ secrets.ACR_RESOURCE_GROUP }} location=${{ secrets.LOCATION }}
 
       - name: Ensure ACR accessible (login)
         run: |
@@ -75,8 +75,34 @@ jobs:
             app-network:
               driver: bridge
           EOF
-          echo "deploy-compose.yml created"
-          sed -n '1,200p' deploy-compose.yml
+          # Strip common leading indentation introduced by YAML block indentation
+          python - <<'PY'
+            import re
+            s=open('deploy-compose.yml').read().splitlines()
+            nonempty=[len(re.match(r'^[ ]*', l).group(0)) for l in s if l.strip()]
+            m=min(nonempty) if nonempty else 0
+            open('deploy-compose.yml','w').write("\n".join(l[m:] for l in s)+("\n" if s else ""))
+            PY
+                      echo "deploy-compose.yml created"
+                      sed -n '1,200p' deploy-compose.yml
+
+      - name: Validate deploy-compose.yml
+        run: |
+          # Basic sanity checks for the generated compose file
+          python - <<'PY'
+            import re,sys
+            txt=open('deploy-compose.yml').read()
+            if not re.search(r'^version:\s*', txt, flags=re.M):
+                print('ERROR: deploy-compose.yml missing top-level "version:"')
+                sys.exit(1)
+            if not re.search(r'^services:\s*', txt, flags=re.M):
+                print('ERROR: deploy-compose.yml missing top-level "services:"')
+                sys.exit(1)
+            if not re.search(r'stocksapi:', txt) or not re.search(r'frontend:', txt):
+                print('ERROR: deploy-compose.yml missing expected services (stocksapi, frontend)')
+                sys.exit(1)
+            print('deploy-compose.yml basic validation passed')
+            PY
 
       - name: Configure Web App to pull from ACR (use managed identity if available)
         run: |
@@ -146,4 +172,4 @@ jobs:
             --multicontainer-config-file deploy-compose.yml
 
       - name: Restart Web App
-        run: az webapp restart --resource-group ${{ secrets.RESOURCE_GROUP }} --name ${{ secrets.WEBAPP_NAME }}
+        run: az webapp restart --resource-group ${{ secrets.RESOURCE_GROUP }} --name ${{ secrets.WEBAPP_NAME }}```
