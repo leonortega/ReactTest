@@ -7,18 +7,9 @@ param appServicePlanName string
 @description('Azure location for resources')
 param location string = resourceGroup().location
 
-@description('Name of an existing Azure Container Registry')
-param acrName string
-
-@description('Resource group where the existing ACR lives (defaults to the current resource group)')
-param acrResourceGroup string = resourceGroup().name
-
-// Reference existing ACR
-// Reference existing ACR (explicit resource group scope)
-resource acr 'Microsoft.ContainerRegistry/registries@2022-02-01' existing = {
-  scope: resourceGroup(acrResourceGroup)
-  name: acrName
-}
+// Note: ACR is not created or referenced here to avoid cross-resource-group deployment scope issues.
+// If you need to grant the Web App's identity AcrPull on an existing ACR, the CI workflow
+// will perform that role assignment after the web app is created.
 
 // App Service Plan (Linux)
 resource plan 'Microsoft.Web/serverfarms@2022-03-01' = {
