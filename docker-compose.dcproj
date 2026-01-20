@@ -17,7 +17,6 @@
     </None>
     <None Include=".dockerignore" />
     <None Include="docker-compose.yml" />
-    <None Include="infra\assignAcrPull.bicep" />
     <None Include="infra\main.bicep" />
     <None Include="infra\README.md" />
   </ItemGroup>
