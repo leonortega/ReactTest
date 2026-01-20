@@ -52,13 +52,17 @@ resource web 'Microsoft.Web/sites@2022-03-01' = {
 }
 
 // Assign AcrPull to the Web App's system assigned identity so App Service can pull images from the ACR
-resource roleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
-  name: guid(web.id, acr.id, 'AcrPull')
-  scope: acr
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
-    principalId: web.identity.principalId
+// This operation targets the ACR's resource group scope, so we implement it via a module
+module assignAcrPull 'assignAcrPull.bicep' = {
+  name: 'assignAcrPull'
+  scope: resourceGroup(acrResourceGroup)
+  params: {
+    acrName: acrName
+    webPrincipalId: web.identity.principalId
   }
+  dependsOn: [
+    web
+  ]
 }
 
 output webAppPrincipalId string = web.identity.principalId
