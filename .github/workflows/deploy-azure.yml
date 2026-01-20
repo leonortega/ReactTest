@@ -101,13 +101,9 @@ jobs:
           services:
             stocksapi:
               image: ${{ secrets.ACR_LOGIN_SERVER }}/stocksapi:${IMAGE_TAG}
-              ports:
-                - "60480:80"
 
             frontend:
               image: ${{ secrets.ACR_LOGIN_SERVER }}/frontend:${IMAGE_TAG}
-              ports:
-                - "5173:80"
               depends_on:
                 - stocksapi
           EOF
