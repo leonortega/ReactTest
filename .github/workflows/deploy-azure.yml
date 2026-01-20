@@ -1,4 +1,4 @@
-name: CI/CD – Build Compose, Push to ACR, Deploy to Azure
+name: CI/CD - Build Compose, Push to ACR, Deploy to Azure
 
 on:
   push:
@@ -22,6 +22,7 @@ jobs:
 
       - name: Deploy infra Bicep (creates App Service Plan + Web App + assign AcrPull)
         run: |
+          # Build parameter list (template only accepts webAppName, appServicePlanName, location)
           PARAMS="webAppName=${{ secrets.WEBAPP_NAME }} appServicePlanName=${{ secrets.APP_SERVICE_PLAN }} location=${{ secrets.LOCATION }}"
 
           echo "Deploying Bicep with parameters: $PARAMS"
@@ -49,7 +50,7 @@ jobs:
           fi
 
           if [ -z "$ACR_RG" ]; then
-            echo "Discovering ACR resource group..."
+            echo "ACR_RESOURCE_GROUP not provided; attempting to discover ACR RG"
             ACR_RG=$(az acr show --name "$ACR_NAME" --query resourceGroup -o tsv || true)
           fi
 
@@ -62,6 +63,13 @@ jobs:
             --name "$ACR_NAME" \
             --resource-group "$ACR_RG" \
             --query id -o tsv)
+
+          if [ -z "$ACR_ID" ] || [ "$ACR_ID" = "null" ]; then
+            echo "ERROR: ACR not found. Check ACR_NAME/ACR_RESOURCE_GROUP and subscription."
+            az account show -o table
+            az acr list -o table
+            exit 1
+          fi
 
           echo "Using ACR scope: $ACR_ID"
 
@@ -109,55 +117,75 @@ jobs:
           IMAGE_TAG=${IMAGE_TAG:-${{ github.sha }}}
 
           cat > deploy-compose.yml <<EOF
-version: '3.8'
-services:
-  stocksapi:
-    image: ${{ secrets.ACR_LOGIN_SERVER }}/stocksapi:${IMAGE_TAG}
-    ports:
-      - "60480:80"
+          version: '3.8'
+          services:
+            stocksapi:
+              image: ${{ secrets.ACR_LOGIN_SERVER }}/stocksapi:${IMAGE_TAG}
+              ports:
+                - "60480:80"
+              networks:
+                - app-network
 
-  frontend:
-    image: ${{ secrets.ACR_LOGIN_SERVER }}/frontend:${IMAGE_TAG}
-    ports:
-      - "5173:80"
-    depends_on:
-      - stocksapi
-EOF
+            frontend:
+              image: ${{ secrets.ACR_LOGIN_SERVER }}/frontend:${IMAGE_TAG}
+              ports:
+                - "5173:80"
+              depends_on:
+                - stocksapi
+              networks:
+                - app-network
+
+          networks:
+            app-network:
+              driver: bridge
+          EOF
 
           echo "deploy-compose.yml created"
           sed -n '1,200p' deploy-compose.yml
 
       - name: Validate deploy-compose.yml
         run: |
-          python <<'PY'
-import re, sys
+          # Basic sanity checks for the generated compose file
+          python - <<'PY'
+          import re, sys
 
-txt = open('deploy-compose.yml').read()
+          txt = open('deploy-compose.yml', 'r', encoding='utf-8').read()
 
-if not re.search(r'^version:\s*', txt, flags=re.M):
-    sys.exit("ERROR: missing version")
+          if not re.search(r'^version:\s*', txt, flags=re.M):
+              print('ERROR: deploy-compose.yml missing top-level "version:"')
+              raise SystemExit(1)
 
-if not re.search(r'^services:\s*', txt, flags=re.M):
-    sys.exit("ERROR: missing services")
+          if not re.search(r'^services:\s*', txt, flags=re.M):
+              print('ERROR: deploy-compose.yml missing top-level "services:"')
+              raise SystemExit(1)
 
-if "stocksapi:" not in txt or "frontend:" not in txt:
-    sys.exit("ERROR: missing expected services")
+          if 'stocksapi:' not in txt or 'frontend:' not in txt:
+              print('ERROR: deploy-compose.yml missing expected services (stocksapi, frontend)')
+              raise SystemExit(1)
 
-print("deploy-compose.yml validation passed")
-PY
+          print('deploy-compose.yml basic validation passed')
+          PY
 
-      - name: Configure Web App to pull from ACR
+      - name: Configure Web App to pull from ACR (use managed identity if available)
         run: |
+          RG=${{ secrets.RESOURCE_GROUP }}
+          WEBAPP=${{ secrets.WEBAPP_NAME }}
+          ACR_LOGIN=${{ secrets.ACR_LOGIN_SERVER }}
+
+          # Set registry URL app setting; if managed identity has AcrPull role assigned by Bicep, no creds needed
           az webapp config appsettings set \
-            --resource-group ${{ secrets.RESOURCE_GROUP }} \
-            --name ${{ secrets.WEBAPP_NAME }} \
-            --settings DOCKER_REGISTRY_SERVER_URL="https://${{ secrets.ACR_LOGIN_SERVER }}"
+            --resource-group "$RG" \
+            --name "$WEBAPP" \
+            --settings DOCKER_REGISTRY_SERVER_URL="https://$ACR_LOGIN" || true
 
       - name: Deploy multi-container (upload compose)
         run: |
+          RG=${{ secrets.RESOURCE_GROUP }}
+          WEBAPP=${{ secrets.WEBAPP_NAME }}
+
           az webapp config container set \
-            --resource-group ${{ secrets.RESOURCE_GROUP }} \
-            --name ${{ secrets.WEBAPP_NAME }} \
+            --resource-group "$RG" \
+            --name "$WEBAPP" \
             --multicontainer-config-type compose \
             --multicontainer-config-file deploy-compose.yml
 
