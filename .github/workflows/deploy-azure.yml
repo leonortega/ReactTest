@@ -117,6 +117,14 @@ jobs:
             --headers "Content-Type=application/json" \
             --body "{\"name\":\"stocksapi\",\"properties\":{\"image\":\"${ACR_LOGIN_SERVER}/stocksapi:${IMAGE_TAG}\",\"isMain\":false,\"targetPort\":${{ env.STOCKSAPI_PORT }}}}"
 
+          # Configure ACR pulls for the web app with managed identity.
+          # This sets the classic container registry settings used by App Service to authenticate to ACR.
+          az webapp config appsettings set \
+            --resource-group "$RG" \
+            --name "$WEBAPP" \
+            --settings DOCKER_REGISTRY_SERVER_URL="https://${{ secrets.ACR_LOGIN_SERVER }}" \
+                       DOCKER_ENABLE_CI=false
+
           # Ensure ASP.NET listens on the target port in the container
           az webapp config appsettings set \
             --resource-group "$RG" \
