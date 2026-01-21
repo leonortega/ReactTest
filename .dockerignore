@@ -36,3 +36,6 @@ Dockerfile
 # Misc
 coverage/
 reports/
+
+.git
+.github

@@ -1,0 +1,139 @@
+name: CI/CD - Build Images, Push to ACR, Deploy Sidecars to Azure App Service
+
+on:
+  push:
+    branches: [ "dev" ]
+  workflow_dispatch:
+
+env:
+  IMAGE_TAG: ${{ github.sha }}
+  FRONTEND_PORT: 80
+  STOCKSAPI_PORT: 8080
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy infra Bicep
+        run: |
+          PARAMS="webAppName=${{ secrets.WEBAPP_NAME }} appServicePlanName=${{ secrets.APP_SERVICE_PLAN }} location=${{ secrets.LOCATION }}"
+
+          az deployment group create \
+            --resource-group ${{ secrets.RESOURCE_GROUP }} \
+            --template-file infra/main.bicep \
+            --parameters $PARAMS
+
+      - name: Assign AcrPull to Web App identity (if needed)
+        run: |
+          RG=${{ secrets.RESOURCE_GROUP }}
+          WEBAPP=${{ secrets.WEBAPP_NAME }}
+          ACR_NAME=${{ secrets.ACR_NAME }}
+          ACR_RG=${{ secrets.ACR_RESOURCE_GROUP }}
+
+          PRINCIPAL_ID=$(az webapp identity show \
+            --name "$WEBAPP" \
+            --resource-group "$RG" \
+            --query principalId -o tsv || true)
+
+          if [ -z "$PRINCIPAL_ID" ] || [ "$PRINCIPAL_ID" = "null" ]; then
+            echo "ERROR: Web App does not have a system-assigned identity."
+            exit 1
+          fi
+
+          if [ -z "$ACR_RG" ]; then
+            ACR_RG=$(az acr show --name "$ACR_NAME" --query resourceGroup -o tsv || true)
+          fi
+
+          if [ -z "$ACR_RG" ]; then
+            echo "ERROR: Could not determine ACR resource group."
+            exit 1
+          fi
+
+          SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+          SCOPE="/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$ACR_RG/providers/Microsoft.ContainerRegistry/registries/$ACR_NAME"
+
+          EXISTS=$(az role assignment list \
+            --assignee "$PRINCIPAL_ID" \
+            --scope "$SCOPE" \
+            --query "length([?roleDefinitionName=='AcrPull'])" -o tsv || true)
+
+          if [ "$EXISTS" = "0" ] || [ -z "$EXISTS" ]; then
+            az role assignment create \
+              --assignee "$PRINCIPAL_ID" \
+              --role AcrPull \
+              --scope "$SCOPE"
+          fi
+
+      - name: Ensure ACR accessible
+        run: |
+          az acr login --name ${{ secrets.ACR_NAME }}
+
+      - name: Build & push stocksapi image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend/StocksApi
+          file: ./backend/StocksApi/Dockerfile
+          push: true
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/stocksapi:${{ env.IMAGE_TAG }}
+
+      - name: Build & push frontend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/frontend:${{ env.IMAGE_TAG }}
+          build-args: |
+            VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
+
+      - name: Deploy sidecar-enabled containers (sitecontainers)
+        run: |
+          RG=${{ secrets.RESOURCE_GROUP }}
+          WEBAPP=${{ secrets.WEBAPP_NAME }}
+          ACR_LOGIN_SERVER=${{ secrets.ACR_LOGIN_SERVER }}
+          IMAGE_TAG=${{ env.IMAGE_TAG }}
+
+          SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+          API_VERSION="2023-12-01"
+          SITE_ID="/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RG/providers/Microsoft.Web/sites/$WEBAPP"
+
+          # Main container (externally reachable): frontend
+          az rest --method PUT \
+            --url "https://management.azure.com$SITE_ID/sitecontainers/frontend?api-version=$API_VERSION" \
+            --headers "Content-Type=application/json" \
+            --body "{\"name\":\"frontend\",\"properties\":{\"image\":\"${ACR_LOGIN_SERVER}/frontend:${IMAGE_TAG}\",\"isMain\":true,\"targetPort\":${{ env.FRONTEND_PORT }}}}"
+
+          # Sidecar container (internal): stocksapi
+          az rest --method PUT \
+            --url "https://management.azure.com$SITE_ID/sitecontainers/stocksapi?api-version=$API_VERSION" \
+            --headers "Content-Type=application/json" \
+            --body "{\"name\":\"stocksapi\",\"properties\":{\"image\":\"${ACR_LOGIN_SERVER}/stocksapi:${IMAGE_TAG}\",\"isMain\":false,\"targetPort\":${{ env.STOCKSAPI_PORT }}}}"
+
+          # Configure ACR pulls for the web app with managed identity.
+          # This sets the classic container registry settings used by App Service to authenticate to ACR.
+          az webapp config appsettings set \
+            --resource-group "$RG" \
+            --name "$WEBAPP" \
+            --settings DOCKER_REGISTRY_SERVER_URL="https://${{ secrets.ACR_LOGIN_SERVER }}" \
+                       DOCKER_ENABLE_CI=false
+
+          # Ensure ASP.NET listens on the target port in the container
+          az webapp config appsettings set \
+            --resource-group "$RG" \
+            --name "$WEBAPP" \
+            --settings ASPNETCORE_HTTP_PORTS="${{ env.STOCKSAPI_PORT }}" \
+                       ASPNETCORE_URLS="http://+:${{ env.STOCKSAPI_PORT }}"
+
+      - name: Restart Web App
+        run: |
+          az webapp restart \
+            --resource-group ${{ secrets.RESOURCE_GROUP }} \
+            --name ${{ secrets.WEBAPP_NAME }}
