@@ -1,4 +1,4 @@
-name: CI/CD - Build Compose, Push to ACR, Deploy to Azure
+name: CI/CD - Build Images, Push to ACR, Deploy Sidecars to Azure App Service
 
 on:
   push:
@@ -7,6 +7,8 @@ on:
 
 env:
   IMAGE_TAG: ${{ github.sha }}
+  FRONTEND_PORT: 80
+  STOCKSAPI_PORT: 8080
 
 jobs:
   build-and-deploy:
@@ -92,55 +94,35 @@ jobs:
           build-args: |
             VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
 
-      - name: Create deploy compose file
+      - name: Deploy sidecar-enabled containers (sitecontainers)
         run: |
-          IMAGE_TAG=${IMAGE_TAG:-${{ github.sha }}}
+          RG=${{ secrets.RESOURCE_GROUP }}
+          WEBAPP=${{ secrets.WEBAPP_NAME }}
+          ACR_LOGIN_SERVER=${{ secrets.ACR_LOGIN_SERVER }}
+          IMAGE_TAG=${{ env.IMAGE_TAG }}
 
-          cat > deploy-compose.yml <<EOF
-          version: '3.8'
-          services:
-            stocksapi:
-              image: ${{ secrets.ACR_LOGIN_SERVER }}/stocksapi:${IMAGE_TAG}
+          SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+          API_VERSION="2023-12-01"
+          SITE_ID="/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RG/providers/Microsoft.Web/sites/$WEBAPP"
 
-            frontend:
-              image: ${{ secrets.ACR_LOGIN_SERVER }}/frontend:${IMAGE_TAG}
-              depends_on:
-                - stocksapi
-          EOF
+          # Main container (externally reachable): frontend
+          az rest --method PUT \
+            --url "https://management.azure.com$SITE_ID/sitecontainers/frontend?api-version=$API_VERSION" \
+            --headers "Content-Type=application/json" \
+            --body "{\"name\":\"frontend\",\"properties\":{\"image\":\"${ACR_LOGIN_SERVER}/frontend:${IMAGE_TAG}\",\"isMain\":true,\"targetPort\":${{ env.FRONTEND_PORT }}}}"
 
-          echo "deploy-compose.yml created"
-          sed -n '1,200p' deploy-compose.yml
+          # Sidecar container (internal): stocksapi
+          az rest --method PUT \
+            --url "https://management.azure.com$SITE_ID/sitecontainers/stocksapi?api-version=$API_VERSION" \
+            --headers "Content-Type=application/json" \
+            --body "{\"name\":\"stocksapi\",\"properties\":{\"image\":\"${ACR_LOGIN_SERVER}/stocksapi:${IMAGE_TAG}\",\"isMain\":false,\"targetPort\":${{ env.STOCKSAPI_PORT }}}}"
 
-      - name: Validate deploy-compose.yml
-        run: |
-          python <<'PY'
-          import re, sys
-
-          txt = open('deploy-compose.yml').read()
-
-          if not re.search(r'^version:\s*', txt, flags=re.M):
-              sys.exit('Missing version')
-
-          if not re.search(r'^services:\s*', txt, flags=re.M):
-              sys.exit('Missing services')
-
-          print('Compose file validated')
-          PY
-
-      - name: Configure Web App to pull from ACR
-        run: |
+          # Ensure ASP.NET listens on the target port in the container
           az webapp config appsettings set \
-            --resource-group ${{ secrets.RESOURCE_GROUP }} \
-            --name ${{ secrets.WEBAPP_NAME }} \
-            --settings DOCKER_REGISTRY_SERVER_URL="https://${{ secrets.ACR_LOGIN_SERVER }}"
-
-      - name: Deploy multi-container
-        run: |
-          az webapp config container set \
-            --resource-group ${{ secrets.RESOURCE_GROUP }} \
-            --name ${{ secrets.WEBAPP_NAME }} \
-            --multicontainer-config-type compose \
-            --multicontainer-config-file deploy-compose.yml
+            --resource-group "$RG" \
+            --name "$WEBAPP" \
+            --settings ASPNETCORE_HTTP_PORTS="${{ env.STOCKSAPI_PORT }}" \
+                       ASPNETCORE_URLS="http://+:${{ env.STOCKSAPI_PORT }}"
 
       - name: Restart Web App
         run: |

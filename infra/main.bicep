@@ -36,8 +36,8 @@ resource web 'Microsoft.Web/sites@2022-03-01' = {
   properties: {
     serverFarmId: plan.id
     siteConfig: {
-      // A placeholder container image; will be replaced when deploying the compose file
-      linuxFxVersion: 'DOCKER|mcr.microsoft.com/azure-app-service/static:latest'
+      // Sidecar-enabled custom containers are designated by linuxFxVersion=sitecontainers
+      linuxFxVersion: 'sitecontainers'
     }
   }
 }
