@@ -1,10 +1,10 @@
-import React from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 
 export interface StockControlsProps {
   tempCompanyId: string;
   tempDate: string;
-  onTempCompanyIdChange: React.Dispatch<React.SetStateAction<string>>;
-  onTempDateChange: React.Dispatch<React.SetStateAction<string>>;
+  onTempCompanyIdChange: Dispatch<SetStateAction<string>>;
+  onTempDateChange: Dispatch<SetStateAction<string>>;
   onSubmit: () => void;
   enabled: boolean;
   loading: boolean;
@@ -21,15 +21,16 @@ export default function StockControls({
 }: StockControlsProps) {
   return (
     <form
-      className="rs-form"
+      className="flex gap-3 items-end mb-3 flex-wrap"
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit();
       }}
       aria-label="Stock query form"
     >
+
       <div>
-        <label className="field-label" htmlFor="company-input">
+        <label className="block mb-1 control-label" htmlFor="company-input">
           Company ID
         </label>
         <input
@@ -37,11 +38,12 @@ export default function StockControls({
           aria-label="Company ID"
           value={tempCompanyId || ''}
           onChange={(e) => onTempCompanyIdChange(e.target.value)}
+          className="input-base"
         />
       </div>
 
       <div>
-        <label className="field-label" htmlFor="date-input">
+        <label className="block mb-1 control-label" htmlFor="date-input">
           Date
         </label>
         <input
@@ -50,11 +52,12 @@ export default function StockControls({
           type="date"
           value={tempDate || ''}
           onChange={(e) => onTempDateChange(e.target.value)}
+          className="input-base"
         />
       </div>
 
       <div>
-        <button className="rs-btn" type="submit" aria-label="Refresh data" disabled={!enabled || loading}>
+        <button className="btn-primary" type="submit" aria-label="Refresh data" disabled={!enabled || loading}>
           {loading ? 'Loading...' : 'Refresh now'}
         </button>
       </div>
