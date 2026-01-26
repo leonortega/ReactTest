@@ -11,8 +11,7 @@ module.exports = [
         ecmaVersion: 'latest',
         sourceType: 'module',
         ecmaFeatures: { jsx: true },
-        // point to the frontend tsconfig so the parser can resolve project settings
-        project: ['./frontend/tsconfig.json'],
+        project: ['./tsconfig.json'],
       },
     },
     plugins: {

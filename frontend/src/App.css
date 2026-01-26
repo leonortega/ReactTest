@@ -62,6 +62,16 @@ body {
   border-radius: 8px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
   padding: 12px;
+  /* ensure padding doesn't cause inner canvas to overflow */
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Ensure Chart.js canvas respects container width and doesn't create tiny horizontal overflow */
+.rs-chart canvas {
+  display: block;
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 .rs-table {
