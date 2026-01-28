@@ -12,6 +12,10 @@
     <None Include=".env" />
     <None Include=".github\copilot-instructions.md" />
     <None Include=".github\workflows\deploy-azure.yml" />
+    <None Include="backend\StocksApi.IntegrationTests\StocksApi.IntegrationTests.csproj" />
+    <None Include="backend\StocksApi.IntegrationTests\StocksApiApiTests.cs" />
+    <None Include="backend\StocksApi.Tests\GetStockValueHandlerTests.cs" />
+    <None Include="backend\StocksApi.Tests\StocksApi.Tests.csproj" />
     <None Include="docker-compose.override.yml">
       <DependentUpon>docker-compose.yml</DependentUpon>
     </None>
