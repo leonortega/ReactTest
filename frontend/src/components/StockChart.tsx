@@ -111,7 +111,7 @@ export default function StockChart({
   }, [chartData, showPoints, showSMA, smaWindow]);
 
   return (
-    <section className="rs-chart w-full h-[380px] p-3 box-border bg-white overflow-hidden" aria-busy={loading} aria-label="Stock chart">
+    <section className="rs-chart box-border h-[380px] w-full overflow-hidden bg-white p-3" aria-busy={loading} aria-label="Stock chart">
       {error && (
         <div className="error-message" role="alert">
           <strong>Error:</strong> {String(error)}
@@ -121,7 +121,7 @@ export default function StockChart({
       {chartData && chartData.labels.length > 0 ? (
         <Line data={dataForChart} options={options} />
       ) : (
-        !loading && <div className="text-last-fetch">No data</div>
+        !loading && <div className="last-fetch">No data</div>
       )}
     </section>
   );

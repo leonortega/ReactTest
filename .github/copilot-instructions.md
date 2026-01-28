@@ -7,10 +7,11 @@
 - Configure nginx in the frontend container to proxy `/api` to `127.0.0.1:8080` and set `VITE_API_BASE_URL` to `/api` at build time in GitHub Actions. Edits should only be made to the existing `frontend/nginx.conf` in the frontend folder; do not create `nginx.conf` elsewhere.
 
 ## Code Style
-- Use specific formatting rules
-- Follow naming conventions
+- Use specific formatting rules.
+- Follow naming conventions.
+- When creating new components, move them to their own file.
 
 ## Project-Specific Rules
-- Custom requirement A
-- Custom requirement B
+- Custom requirement A.
+- Custom requirement B.
 - Workspace targets .NET 10.

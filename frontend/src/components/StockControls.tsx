@@ -1,16 +1,17 @@
-import type { Dispatch, SetStateAction } from 'react';
+import { memo, useCallback } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 
 export interface StockControlsProps {
   tempCompanyId: string;
   tempDate: string;
-  onTempCompanyIdChange: Dispatch<SetStateAction<string>>;
-  onTempDateChange: Dispatch<SetStateAction<string>>;
+  onTempCompanyIdChange: (value: string) => void;
+  onTempDateChange: (value: string) => void;
   onSubmit: () => void;
   enabled: boolean;
   loading: boolean;
 }
 
-export default function StockControls({
+function StockControls({
   tempCompanyId,
   tempDate,
   onTempCompanyIdChange,
@@ -19,31 +20,50 @@ export default function StockControls({
   enabled,
   loading,
 }: StockControlsProps) {
+  const handleSubmit = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      onSubmit();
+    },
+    [onSubmit]
+  );
+
+  const handleCompanyChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      onTempCompanyIdChange(event.target.value);
+    },
+    [onTempCompanyIdChange]
+  );
+
+  const handleDateChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      onTempDateChange(event.target.value);
+    },
+    [onTempDateChange]
+  );
+
   return (
     <form
-      className="flex gap-3 items-end mb-3 flex-wrap"
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSubmit();
-      }}
+      className="mb-3 flex flex-wrap items-end gap-3"
+      onSubmit={handleSubmit}
       aria-label="Stock query form"
     >
 
       <div>
-        <label className="block mb-1 control-label" htmlFor="company-input">
+        <label className="control-label mb-1 block" htmlFor="company-input">
           Company ID
         </label>
         <input
           id="company-input"
           aria-label="Company ID"
           value={tempCompanyId || ''}
-          onChange={(e) => onTempCompanyIdChange(e.target.value)}
+          onChange={handleCompanyChange}
           className="input-base"
         />
       </div>
 
       <div>
-        <label className="block mb-1 control-label" htmlFor="date-input">
+        <label className="control-label mb-1 block" htmlFor="date-input">
           Date
         </label>
         <input
@@ -51,7 +71,7 @@ export default function StockControls({
           aria-label="Date"
           type="date"
           value={tempDate || ''}
-          onChange={(e) => onTempDateChange(e.target.value)}
+          onChange={handleDateChange}
           className="input-base"
         />
       </div>
@@ -64,5 +84,7 @@ export default function StockControls({
     </form>
   );
 }
+
+export default memo(StockControls);
 
 

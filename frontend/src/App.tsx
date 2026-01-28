@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useStocks } from './hooks/useStocks';
 import StockChart from './components/StockChart';
 import StockControls from './components/StockControls';
+import ToggleOption from './components/ToggleOption';
 import logo from './assets/logo.svg';
 
 function App() {
@@ -16,7 +17,7 @@ function App() {
   const [showPoints, setShowPoints] = useState(false);
   const [showSMA, setShowSMA] = useState(true);
   const [smaWindow, setSmaWindow] = useState(5);
-  
+
 
   // debounce timers
   const debounceRef = useRef<number | undefined>(undefined);
@@ -53,6 +54,30 @@ function App() {
 
   const loading = status === 'loading' || isFetching;
 
+  const handleTempCompanyIdChange = useCallback((value: string) => {
+    setTempCompanyId(value);
+  }, []);
+
+  const handleTempDateChange = useCallback((value: string) => {
+    setTempDate(value);
+  }, []);
+
+  const handleSubmit = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  const handleShowPointsChange = useCallback((checked: boolean) => {
+    setShowPoints(checked);
+  }, []);
+
+  const handleShowSmaChange = useCallback((checked: boolean) => {
+    setShowSMA(checked);
+  }, []);
+
+  const handleSmaWindowChange = useCallback((value: string) => {
+    setSmaWindow(Number(value) || 1);
+  }, []);
+
   return (
     <div className="p-6 text-slate-900">
       <a className="sr-only focus:not-sr-only" href="#main">
@@ -70,38 +95,22 @@ function App() {
         <StockControls
           tempCompanyId={tempCompanyId}
           tempDate={tempDate}
-          onTempCompanyIdChange={setTempCompanyId}
-          onTempDateChange={setTempDate}
-          onSubmit={() => refetch()}
+          onTempCompanyIdChange={handleTempCompanyIdChange}
+          onTempDateChange={handleTempDateChange}
+          onSubmit={handleSubmit}
           enabled={Boolean(companyId && date)}
           loading={loading}
         />
 
-        <div className="text-last-fetch" aria-live="polite" aria-atomic="true">
+        <div className="last-fetch">
           {(localLastFetchTime || lastFetchTime)
             ? `Last API call: ${new Date(localLastFetchTime ?? lastFetchTime!).toLocaleString()}`
             : 'No API calls yet'}
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 mb-2">
-          <label className="inline-flex items-center gap-1 control-label">
-            <input
-              type="checkbox"
-              checked={showPoints}
-              onChange={(e) => setShowPoints(e.target.checked)}
-              className="form-checkbox"
-            />
-            <span className="ml-1">Show points</span>
-          </label>
-          <label className="inline-flex items-center gap-1 control-label">
-            <input
-              type="checkbox"
-              checked={showSMA}
-              onChange={(e) => setShowSMA(e.target.checked)}
-              className="form-checkbox"
-            />
-            <span className="ml-1">Show SMA</span>
-          </label>
+        <div className="mb-2 flex flex-wrap items-center gap-3">
+          <ToggleOption label="Show points" checked={showPoints} onChange={handleShowPointsChange} />
+          <ToggleOption label="Show SMA" checked={showSMA} onChange={handleShowSmaChange} />
           {showSMA && (
             <label className="control-label inline-flex items-center gap-2 text-sm text-slate-900">
               <span>Window</span>
@@ -110,7 +119,7 @@ function App() {
                 type="number"
                 min={1}
                 value={smaWindow}
-                onChange={(e) => setSmaWindow(Number(e.target.value) || 1)}
+                onChange={(e) => handleSmaWindowChange(e.target.value)}
                 className="small-input"
               />
             </label>
