@@ -51,15 +51,7 @@
     @apply text-sm text-slate-500;
   }
 
-  .last-fetch {
-    @apply text-sm text-slate-600 mb-2;
-  }
-
   .control-label {
     @apply text-sm text-slate-900 inline-flex items-center gap-2;
-  }
-
-  .table-cell {
-    @apply p-2 align-top;
   }
 }
