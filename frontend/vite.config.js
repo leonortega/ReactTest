@@ -23,5 +23,13 @@ export default ({ mode }) => {
           }
         : {}),
     },
+    test: {
+      environment: 'jsdom',
+      setupFiles: './src/setupTests.ts',
+      css: true,
+      globals: true,
+      include: ['src/**/*.{test,spec}.{ts,tsx}'],
+      exclude: ['e2e/**', '**/node_modules/**', 'dist/**'],
+    },
   })
 }
