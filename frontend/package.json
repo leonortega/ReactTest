@@ -16,7 +16,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "prepare": "cd .. && husky install"
+    "prepare": "cd .. && git config core.hooksPath .husky"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.0.0",
