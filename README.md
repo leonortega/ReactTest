@@ -42,6 +42,40 @@ Environment
 VITE_API_BASE_URL=http://localhost:60480/api
 ```
 
+Tests
+
+Backend
+
+- Unit tests:
+
+```bash
+dotnet test backend/StocksApi.Tests
+```
+
+- Integration tests:
+
+```bash
+dotnet test backend/StocksApi.IntegrationTests
+```
+
+Frontend
+
+- Unit tests:
+
+```bash
+cd frontend
+npm install
+npm test
+```
+
+- Integration (end-to-end) tests:
+
+```bash
+cd frontend
+npm install
+npm run test:e2e
+```
+
 Docker deployment
 
 This repository already includes Dockerfiles and a `docker-compose.yml` to build and run the backend and frontend together.
