@@ -8,6 +8,10 @@
 - Run lint checks for both backend and frontend before committing changes to ensure code quality and consistency.
 - Use Husky v9+ for managing Git hooks; avoid the deprecated `npx husky install` command.
 
+## Testing Guidelines
+- Include an E2E test named `app.spec.ts` in the test files.
+- Maintain a `test-results` folder in the workspace for storing test outputs.
+
 ## Code Style
 - Use specific formatting rules.
 - Follow naming conventions.

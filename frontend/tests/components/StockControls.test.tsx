@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
-import StockControls from '../StockControls';
+import StockControls from '../../src/components/StockControls';
 
 const setup = () => {
   const user = userEvent.setup();

@@ -25,6 +25,30 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StocksApi.IntegrationTests"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StocksApi.Tests", "backend\StocksApi.Tests\StocksApi.Tests.csproj", "{A526FACD-6008-D7B7-1E82-017B7DBF2818}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{DD366944-DE44-4E0A-87B0-E90382BEDA8C}"
+	ProjectSection(SolutionItems) = preProject
+		.github\copilot-instructions.md = .github\copilot-instructions.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{0435BBDF-9965-4CBF-ABEA-8FDFD1CFE7C2}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\deploy-azure.yml = .github\workflows\deploy-azure.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".husky", ".husky", "{7D9FF8A5-545F-49C3-AE89-D04DEB2AAFF7}"
+	ProjectSection(SolutionItems) = preProject
+		.husky\pre-commit = .husky\pre-commit
+		.husky\pre-push = .husky\pre-push
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "infra", "infra", "{6996E75D-DEF2-497A-8A2C-82FF9B2ACF50}"
+	ProjectSection(SolutionItems) = preProject
+		infra\main.bicep = infra\main.bicep
+		infra\README.md = infra\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{8EED1C39-103F-4BE8-AE4B-CFBFF7D144C5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -108,8 +132,13 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{2BDB103F-B197-4AFE-B43C-7E8E3F81A51C} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
 		{462EE049-9FE1-B47D-1B3E-22BACA5D9185} = {8B1FD096-FC38-4F70-95AF-DF0A8A768E7C}
-		{5EEDA76F-05FF-B377-0DF2-9145671AAD16} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
-		{A526FACD-6008-D7B7-1E82-017B7DBF2818} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
+		{5EEDA76F-05FF-B377-0DF2-9145671AAD16} = {8EED1C39-103F-4BE8-AE4B-CFBFF7D144C5}
+		{A526FACD-6008-D7B7-1E82-017B7DBF2818} = {8EED1C39-103F-4BE8-AE4B-CFBFF7D144C5}
+		{DD366944-DE44-4E0A-87B0-E90382BEDA8C} = {04CA87CA-D9DC-44F3-ACE4-6711D8A67154}
+		{0435BBDF-9965-4CBF-ABEA-8FDFD1CFE7C2} = {DD366944-DE44-4E0A-87B0-E90382BEDA8C}
+		{7D9FF8A5-545F-49C3-AE89-D04DEB2AAFF7} = {04CA87CA-D9DC-44F3-ACE4-6711D8A67154}
+		{6996E75D-DEF2-497A-8A2C-82FF9B2ACF50} = {04CA87CA-D9DC-44F3-ACE4-6711D8A67154}
+		{8EED1C39-103F-4BE8-AE4B-CFBFF7D144C5} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F0B658A1-6F34-44F9-92C3-0C4F98DC7B94}

@@ -1,12 +1,11 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type ConfigEnv } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 
-export default ({ mode }) => {
+export default ({ mode }: ConfigEnv) => {
   const env = loadEnv(mode, process.cwd(), '')
 
   return defineConfig({
     plugins: [react()],
-    // Touching this line for TS migration consistency
     server: {
       port: 5173,
       strictPort: true,
@@ -25,11 +24,11 @@ export default ({ mode }) => {
     },
     test: {
       environment: 'jsdom',
-      setupFiles: './src/setupTests.ts',
+      setupFiles: './tests/setupTests.ts',
       css: true,
       globals: true,
-      include: ['src/**/*.{test,spec}.{ts,tsx}'],
-      exclude: ['e2e/**', '**/node_modules/**', 'dist/**'],
+      include: ['tests/**/*.{test,spec}.{ts,tsx}'],
+      exclude: ['tests/e2e/**', '**/node_modules/**', 'dist/**'],
     },
   })
 }

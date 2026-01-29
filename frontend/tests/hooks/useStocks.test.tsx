@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react';
 import { act } from 'react';
 import { vi } from 'vitest';
-import { useStocks } from '../useStocks';
+import { useStocks } from '../../src/hooks/useStocks';
 
 describe('useStocks', () => {
   const stockResponse = [

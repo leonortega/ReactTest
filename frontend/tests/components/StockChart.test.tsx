@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
-import StockChart from '../StockChart';
+import StockChart from '../../src/components/StockChart';
 
 vi.mock('react-chartjs-2', () => ({
   Line: ({ data }: { data: unknown }) => <div data-testid="chart">{JSON.stringify(data)}</div>,
