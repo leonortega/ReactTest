@@ -13,6 +13,7 @@
     <None Include=".github\copilot-instructions.md" />
     <None Include=".github\workflows\deploy-azure.yml" />
     <None Include=".husky\pre-commit" />
+    <None Include=".husky\pre-push" />
     <None Include="docker-compose.override.yml">
       <DependentUpon>docker-compose.yml</DependentUpon>
     </None>

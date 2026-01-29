@@ -1,0 +1,10 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+cd frontend
+npm run test
+npm run test:e2e
+
+cd ..
+dotnet test backend/StocksApi.Tests/StocksApi.Tests.csproj
+dotnet test backend/StocksApi.IntegrationTests/StocksApi.IntegrationTests.csproj
