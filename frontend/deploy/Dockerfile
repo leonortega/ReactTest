@@ -6,6 +6,7 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 COPY package*.json ./
+ENV HUSKY=0
 RUN npm ci
 
 COPY . .
