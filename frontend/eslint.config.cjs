@@ -11,13 +11,13 @@ module.exports = [
         ecmaVersion: 'latest',
         sourceType: 'module',
         ecmaFeatures: { jsx: true },
-        // point to the frontend tsconfig so the parser can resolve project settings
-        project: ['./frontend/tsconfig.json'],
+        project: ['./tsconfig.json'],
       },
     },
     plugins: {
       '@typescript-eslint': require('@typescript-eslint/eslint-plugin'),
       react: require('eslint-plugin-react'),
+      'tailwindcss': require('eslint-plugin-tailwindcss'),
       'react-hooks': require('eslint-plugin-react-hooks'),
       'react-refresh': require('eslint-plugin-react-refresh'),
     },
@@ -28,6 +28,8 @@ module.exports = [
       'react/react-in-jsx-scope': 'off',
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
+      // Tailwind linting: enforce class order and avoid conflicting classes
+      'tailwindcss/classnames-order': 'warn',
     },
   },
 ];

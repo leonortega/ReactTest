@@ -54,3 +54,5 @@ app.MapGet("/api/stocks/{companyId}", async (IMediator mediator, string companyI
 app.MapGet("/health", () => Results.Ok("OK"));
 
 app.Run();
+
+public partial class Program;

@@ -7,7 +7,7 @@ Projects
 - `backend/StocksApi` - .NET 10 Web API that implements a vertical-slice style with MediatR. It exposes a stocks endpoint:
   - `GET /api/stocks/{companyId}?date={YYYY-MM-DD}` — returns an array of stock points for the requested company and date.
 
-- `frontend` - React (Vite) application that visualizes stock data. The frontend uses Vite and reads an environment variable `VITE_API_BASE_URL` (or `VITE_API_BASE`) to determine the backend base URL at runtime/build time.
+- `frontend` - React (Vite) application that visualizes stock data. The frontend reads an environment variable `VITE_API_BASE_URL` to determine the backend base URL at runtime/build time.
 
 Local development
 
@@ -36,10 +36,44 @@ npm run dev
 
 Environment
 
-- Frontend reads `VITE_API_BASE_URL` (or `VITE_API_BASE`) to configure the API base URL. Example `.env`:
+- Frontend reads `VITE_API_BASE_URL` to configure the API base URL. Example `.env`:
 
 ```
-VITE_API_BASE_URL=http://localhost:5000
+VITE_API_BASE_URL=http://localhost:60480/api
+```
+
+Tests
+
+Backend
+
+- Unit tests:
+
+```bash
+dotnet test backend/StocksApi.Tests
+```
+
+- Integration tests:
+
+```bash
+dotnet test backend/StocksApi.IntegrationTests
+```
+
+Frontend
+
+- Unit tests:
+
+```bash
+cd frontend
+npm install
+npm test
+```
+
+- Integration (end-to-end) tests:
+
+```bash
+cd frontend
+npm install
+npm run test:e2e
 ```
 
 Docker deployment
@@ -56,6 +90,6 @@ docker compose up --build
 docker-compose up --build
 ```
 
-The compose file configures the API base URL for the frontend (via `VITE_API_BASE_URL` or similar) and exposes the configured ports. Check `docker-compose.yml` for the exact ports and service names used in this workspace.
+The compose file builds the frontend with `VITE_API_BASE_URL` and exposes the configured ports. Check `docker-compose.yml` for the exact ports and service names used in this workspace.
 
 If you prefer to build and run images manually you can still use the individual `Dockerfile`s in `backend/StocksApi` and `frontend` — the compose setup is provided for convenience and reproducibility.

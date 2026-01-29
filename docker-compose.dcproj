@@ -9,15 +9,16 @@
     <DockerServiceName>stocksapi</DockerServiceName>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove=".github\**" />
+    <None Remove=".husky\**" />
+    <None Remove="infra\**" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include=".env" />
-    <None Include=".github\copilot-instructions.md" />
-    <None Include=".github\workflows\deploy-azure.yml" />
     <None Include="docker-compose.override.yml">
       <DependentUpon>docker-compose.yml</DependentUpon>
     </None>
     <None Include=".dockerignore" />
     <None Include="docker-compose.yml" />
-    <None Include="infra\main.bicep" />
-    <None Include="infra\README.md" />
   </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.VisualStudio.JavaScript.Sdk/1.0.3864779">
   <PropertyGroup>
     <StartupCommand>npm run dev</StartupCommand>
-    <JavaScriptTestRoot>src\</JavaScriptTestRoot>
+    <JavaScriptTestRoot>tests\</JavaScriptTestRoot>
     <JavaScriptTestFramework>Vitest</JavaScriptTestFramework>
     <!-- Run npm build when you Build in VS -->
     <ShouldRunBuildScript>true</ShouldRunBuildScript>

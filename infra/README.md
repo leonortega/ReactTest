@@ -7,21 +7,16 @@ This folder contains a Bicep template (`main.bicep`) and a sample parameters fil
 - `parameters.json` - Sample parameters file. Update values before deploying.
 
 ## Prerequisites
-- Azure CLI installed and logged in (`az login`).
+- Access to the Azure portal.
 - The target resource group already exists.
 - An Azure Container Registry (ACR) exists and is accessible.
 
-## Deploy using Azure CLI
+## Deploy using Azure portal
 1. Update `parameters.json` values to match your environment (resource group, ACR name, web app name, plan name, location).
-
-2. Deploy the Bicep template:
-
-```bash
-az deployment group create \
-  --resource-group <your-resource-group> \
-  --template-file infra/main.bicep \
-  --parameters @infra/parameters.json
-```
+2. In the Azure portal, open the target resource group.
+3. Select `Deploy a custom template`.
+4. Choose `Build your own template in the editor`, then upload `infra/main.bicep`.
+5. Fill in the parameters (you can copy values from `infra/parameters.json`), then select `Review + create`.
 
 This will:
 - Create an App Service Plan (Linux)
@@ -43,6 +38,8 @@ Secrets required in GitHub repository settings:
 - `LOCATION`: Azure location (e.g., `eastus`)
 - `ACR_NAME`: ACR resource name
 - `ACR_LOGIN_SERVER`: ACR login server (e.g., `myregistry.azurecr.io`)
+- `ACR_RESOURCE_GROUP`: Resource group that hosts the ACR (optional if it matches `RESOURCE_GROUP`)
+- `VITE_API_BASE_URL`: Set to `/api` for the containerized deployment
 - Optional (for credentials variant): `ACR_USERNAME`, `ACR_PASSWORD`
 
 ## Notes

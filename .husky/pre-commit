@@ -1,0 +1,10 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+cd frontend
+npm run lint:staged
+
+cd ..
+dotnet format backend/StocksApi/StocksApi.csproj --verify-no-changes
+dotnet format backend/StocksApi.Tests/StocksApi.Tests.csproj --verify-no-changes
+dotnet format backend/StocksApi.IntegrationTests/StocksApi.IntegrationTests.csproj --verify-no-changes
