@@ -7,7 +7,7 @@ WORKDIR /app
 
 COPY package*.json ./
 ENV HUSKY=0
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 COPY . .
 
