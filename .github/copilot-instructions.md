@@ -5,6 +5,7 @@
 - Prefer GUI/portal instructions for Azure operations; avoid using CLI commands for these tasks. When asked, explicitly provide portal steps rather than CLI instructions.
 - Avoid exposing secrets in the repository.
 - Configure nginx in the frontend container to proxy `/api` to `127.0.0.1:8080` and set `VITE_API_BASE_URL` to `/api` at build time in GitHub Actions. Edits should only be made to the existing `frontend/nginx.conf` in the frontend folder; do not create `nginx.conf` elsewhere.
+- Run lint checks for both backend and frontend before committing changes to ensure code quality and consistency.
 
 ## Code Style
 - Use specific formatting rules.

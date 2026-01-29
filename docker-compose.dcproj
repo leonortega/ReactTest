@@ -12,6 +12,7 @@
     <None Include=".env" />
     <None Include=".github\copilot-instructions.md" />
     <None Include=".github\workflows\deploy-azure.yml" />
+    <None Include=".husky\pre-commit" />
     <None Include="backend\StocksApi.IntegrationTests\StocksApi.IntegrationTests.csproj" />
     <None Include="backend\StocksApi.IntegrationTests\StocksApiApiTests.cs" />
     <None Include="backend\StocksApi.Tests\GetStockValueHandlerTests.cs" />
