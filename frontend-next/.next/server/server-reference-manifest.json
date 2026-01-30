@@ -1,0 +1,51 @@
+{
+  "node": {
+    "401a1a817d761cb861770a4b502a29efd1d23475e7": {
+      "workers": {
+        "app/app/alerts/page": {
+          "moduleId": 29938,
+          "async": false,
+          "exportedName": "createAlert",
+          "filename": "app/_actions/alerts.ts"
+        }
+      },
+      "layer": {
+        "app/app/alerts/page": "rsc"
+      },
+      "filename": "app/_actions/alerts.ts",
+      "exportedName": "createAlert"
+    },
+    "401a08fc8f4497a5b211d4f0010161759efd0a6d5f": {
+      "workers": {
+        "app/app/preferences/page": {
+          "moduleId": 50077,
+          "async": false,
+          "exportedName": "updatePreferences",
+          "filename": "app/_actions/preferences.ts"
+        }
+      },
+      "layer": {
+        "app/app/preferences/page": "rsc"
+      },
+      "filename": "app/_actions/preferences.ts",
+      "exportedName": "updatePreferences"
+    },
+    "4041f926c8a4c69fbaa2352a2a5cfcd14ed15b6ecf": {
+      "workers": {
+        "app/app/watchlists/page": {
+          "moduleId": 94397,
+          "async": false,
+          "exportedName": "createWatchlist",
+          "filename": "app/_actions/watchlists.ts"
+        }
+      },
+      "layer": {
+        "app/app/watchlists/page": "rsc"
+      },
+      "filename": "app/_actions/watchlists.ts",
+      "exportedName": "createWatchlist"
+    }
+  },
+  "edge": {},
+  "encryptionKey": "OUZhO4hcoZA5iXOc7jrqbzGXs1OERaYKnGfp8Xdq2z4="
+}

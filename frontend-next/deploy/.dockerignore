@@ -1,0 +1,8 @@
+node_modules
+.next
+.git
+reports
+test-results
+coverage
+data
+.vscode
