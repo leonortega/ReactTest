@@ -1,0 +1,3 @@
+module.exports=[30725,a=>{"use strict";var b=a.i(7997);function c(){return(0,b.jsxs)("div",{className:"mx-auto max-w-[980px] px-6 py-12",children:[(0,b.jsx)("div",{className:"h-6 w-48 animate-pulse rounded bg-slate-200"}),(0,b.jsx)("div",{className:"mt-4 h-[280px] animate-pulse rounded bg-slate-100"}),(0,b.jsx)("div",{className:"mt-4 h-24 animate-pulse rounded bg-slate-100"})]})}a.s(["default",()=>c])}];
+
+//# sourceMappingURL=app_app_stocks_%5Bsymbol%5D_loading_tsx_353235bd._.js.map

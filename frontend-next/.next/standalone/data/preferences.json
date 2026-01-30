@@ -1,0 +1,8 @@
+{
+  "theme": "dark",
+  "currency": "EUR",
+  "notifications": {
+    "email": false,
+    "inApp": true
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "node": {
+    "401a08fc8f4497a5b211d4f0010161759efd0a6d5f": {
+      "workers": {
+        "app/app/preferences/page": {
+          "moduleId": 50077,
+          "async": false,
+          "exportedName": "updatePreferences",
+          "filename": "app/_actions/preferences.ts"
+        }
+      },
+      "layer": {
+        "app/app/preferences/page": "rsc"
+      },
+      "exportedName": "updatePreferences",
+      "filename": "app/_actions/preferences.ts"
+    }
+  },
+  "edge": {}
+}

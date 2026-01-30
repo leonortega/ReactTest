@@ -1,0 +1,18 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/search/route": "/api/search",
+  "/api/stocks/route": "/api/stocks",
+  "/app/alerts/history/page": "/app/alerts/history",
+  "/app/alerts/page": "/app/alerts",
+  "/app/page": "/app",
+  "/app/preferences/page": "/app/preferences",
+  "/app/stocks/[symbol]/page": "/app/stocks/[symbol]",
+  "/app/watchlists/page": "/app/watchlists",
+  "/blog/[slug]/page": "/blog/[slug]",
+  "/blog/page": "/blog",
+  "/docs/page": "/docs",
+  "/page": "/",
+  "/pricing/page": "/pricing",
+  "/stocks/[symbol]/page": "/stocks/[symbol]"
+}
