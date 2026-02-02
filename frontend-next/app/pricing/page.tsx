@@ -36,8 +36,8 @@ export default function PricingPage() {
             <div className="text-xl font-semibold">{tier.name}</div>
             <div className="mt-2 text-3xl font-semibold text-slate-900">{tier.price}</div>
             <p className="mt-3 text-sm text-slate-600">{tier.detail}</p>
-            <Link className="mt-4 inline-flex text-sm font-medium" href="/app">
-              Get started
+            <Link className="mt-4 inline-flex text-sm font-medium" href="/dashboard">
+              Go to dashboard
             </Link>
           </div>
         ))}

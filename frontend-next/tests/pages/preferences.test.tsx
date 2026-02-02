@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import PreferencesPage from '../../app/app/preferences/page';
+import PreferencesPage from '../../app/dashboard/preferences/page';
 import { writeStore } from '../../app/_lib/storage';
 
 beforeEach(async () => {

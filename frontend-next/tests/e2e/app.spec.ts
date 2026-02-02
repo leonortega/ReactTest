@@ -18,7 +18,7 @@ test('loads stocks data and shows table', async ({ page }: { page: Page }) => {
     },
   ]);
 
-  await page.goto('/app/stocks/ABC');
+  await page.goto('/dashboard/stocks/ABC');
 
   await expect(page.getByRole('table')).toBeVisible();
   await expect(page.getByText('Show points')).toBeVisible();

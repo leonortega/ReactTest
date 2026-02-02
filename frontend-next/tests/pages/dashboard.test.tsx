@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import DashboardPage from '../../app/app/page';
+import DashboardPage from '../../app/dashboard/page';
 import { writeStore } from '../../app/_lib/storage';
 
 const setupStores = async () => {

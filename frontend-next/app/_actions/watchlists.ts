@@ -29,6 +29,6 @@ export async function createWatchlist(formData: FormData) {
   });
 
   await writeStore(storeFile, store);
-  revalidatePath('/app/watchlists');
-  revalidatePath('/app');
+  revalidatePath('/dashboard/watchlists');
+  revalidatePath('/dashboard');
 }

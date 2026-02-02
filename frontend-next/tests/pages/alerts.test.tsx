@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import AlertsPage from '../../app/app/alerts/page';
+import AlertsPage from '../../app/dashboard/alerts/page';
 import { writeStore } from '../../app/_lib/storage';
 
 beforeEach(async () => {

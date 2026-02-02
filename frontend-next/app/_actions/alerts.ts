@@ -68,7 +68,7 @@ export async function createAlert(formData: FormData) {
   });
   await writeStore(jobsFile, jobsStore);
 
-  revalidatePath('/app/alerts');
-  revalidatePath('/app/alerts/history');
-  revalidatePath('/app');
+  revalidatePath('/dashboard/alerts');
+  revalidatePath('/dashboard/alerts/history');
+  revalidatePath('/dashboard');
 }
