@@ -1,20 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
-import Image from 'next/image';
 import { useStocks } from '../_hooks/useStocks';
 import type { StockData } from '../_lib/types';
 import StockChart from './StockChart';
 import StockControls from './StockControls';
 import ToggleOption from './ToggleOption';
-import logo from '../../public/logo.svg';
 
 type AppClientProps = {
   initialCompanyId?: string;
   initialDate?: string;
   initialStockData?: StockData[];
   initialLastFetchTime?: number | null;
-  initialView?: 'intraday' | 'historical';
 };
 
 export default function AppClient({
@@ -22,7 +19,6 @@ export default function AppClient({
   initialDate = '2024-01-01',
   initialStockData,
   initialLastFetchTime,
-  initialView = 'intraday',
 }: AppClientProps) {
   const [companyId, setCompanyId] = useState(initialCompanyId);
   const [date, setDate] = useState(initialDate);
@@ -37,8 +33,6 @@ export default function AppClient({
   const [smaWindow, setSmaWindow] = useState(5);
   const [emaWindow, setEmaWindow] = useState(8);
   const [rsiWindow, setRsiWindow] = useState(14);
-  const [view, setView] = useState<'intraday' | 'historical'>(initialView);
-
   const debounceRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
@@ -66,7 +60,6 @@ export default function AppClient({
   } = useStocks(companyId, date, {
     initialData: initialStockData,
     initialLastFetchTime,
-    view,
   });
 
   const [localLastFetchTime, setLocalLastFetchTime] = useState<Date | null>(null);
@@ -119,22 +112,15 @@ export default function AppClient({
     setRsiWindow(Number(value) || 1);
   }, []);
 
-  const handleViewChange = useCallback((value: 'intraday' | 'historical') => {
-    setView(value);
-  }, []);
-
   return (
     <div className="p-6 text-slate-900">
       <a className="sr-only focus:not-sr-only" href="#main">
         Skip to content
       </a>
       <div id="main" role="main" className="mx-auto max-w-[980px]">
-        <header className="mb-2 flex items-center gap-3">
-          <Image src={logo} alt="React Stocks logo" width={40} height={40} priority />
-          <div>
-            <div className="site-title">MarketPulse Analytics</div>
-            <div className="site-subtitle">Live stock visualization</div>
-          </div>
+        <header className="mb-2">
+          <div className="site-title">MarketPulse Analytics</div>
+          <div className="site-subtitle">Live stock visualization</div>
         </header>
 
         <StockControls
@@ -162,20 +148,6 @@ export default function AppClient({
           <ToggleOption label="Show SMA" checked={showSMA} onChange={handleShowSmaChange} />
           <ToggleOption label="Show EMA" checked={showEMA} onChange={handleShowEmaChange} />
           <ToggleOption label="Show RSI" checked={showRSI} onChange={handleShowRsiChange} />
-          <label className="control-label inline-flex items-center gap-2 text-sm text-slate-900">
-            <span>View</span>
-            <select
-              aria-label="Data view"
-              value={view}
-              onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                handleViewChange(e.target.value as 'intraday' | 'historical')
-              }
-              className="input-base"
-            >
-              <option value="intraday">Intraday</option>
-              <option value="historical">Historical</option>
-            </select>
-          </label>
           {showSMA && (
             <label className="control-label inline-flex items-center gap-2 text-sm text-slate-900">
               <span>Window</span>

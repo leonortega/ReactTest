@@ -8,7 +8,6 @@ export async function fetchStockData(
   view: 'intraday' | 'historical' = 'intraday',
 ): Promise<StockData[]> {
   const baseUrl = (
-    process.env.STOCKS_API_BASE_URL ||
     process.env.NEXT_PUBLIC_API_BASE_URL ||
     defaultBaseUrl
   ).replace(/\/$/, '');

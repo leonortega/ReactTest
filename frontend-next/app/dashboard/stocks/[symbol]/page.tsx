@@ -25,7 +25,7 @@ export default async function AppStockPage({
   searchParams,
 }: {
   params: Promise<{ symbol: string }>;
-  searchParams?: Promise<{ date?: string; view?: string }>;
+  searchParams?: Promise<{ date?: string }>;
 }) {
   const [{ symbol }, resolvedSearchParams] = await Promise.all([
     params,
@@ -33,7 +33,6 @@ export default async function AppStockPage({
   ]);
   const companyId = decodeURIComponent(symbol).toUpperCase();
   const date = resolvedSearchParams?.date ?? new Date().toISOString().slice(0, 10);
-  const view = (resolvedSearchParams?.view ?? 'intraday') as 'intraday' | 'historical';
 
-  return <StockAnalyticsPage companyId={companyId} date={date} view={view} />;
+  return <StockAnalyticsPage companyId={companyId} date={date} />;
 }

@@ -43,7 +43,6 @@ export async function GET(request: Request) {
   }
 
   const baseUrl = (
-    process.env.STOCKS_API_BASE_URL ||
     process.env.NEXT_PUBLIC_API_BASE_URL ||
     defaultBaseUrl
   ).replace(/\/$/, '');
