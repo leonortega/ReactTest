@@ -12,4 +12,4 @@ docker run --rm -p 3000:3000 frontend-next
 
 ## Notes
 - Uses Next.js standalone output.
-- Configure `STOCKS_API_BASE_URL` for upstream API calls.
+- Configure `NEXT_PUBLIC_API_BASE_URL` for upstream API calls.

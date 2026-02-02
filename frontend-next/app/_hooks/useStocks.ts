@@ -6,7 +6,6 @@ import type { StockData } from '../_lib/types';
 export interface UseStocksOptions {
   initialData?: StockData[];
   initialLastFetchTime?: number | null;
-  view?: 'intraday' | 'historical';
 }
 
 export interface UseStocksResult {
@@ -42,8 +41,14 @@ export function useStocks(
     setIsFetching(true);
     setError(null);
 
-    const view = options?.view ?? 'intraday';
-    const url = `/api/stocks?companyId=${encodeURIComponent(companyId)}&date=${encodeURIComponent(date)}&view=${encodeURIComponent(view)}`;
+    const apiBaseUrl =
+      process.env.NEXT_PUBLIC_API_BASE_URL ??
+      process.env.VITE_API_BASE_URL ??
+      '/api';
+    const normalizedBaseUrl = apiBaseUrl.endsWith('/')
+      ? apiBaseUrl.slice(0, -1)
+      : apiBaseUrl;
+    const url = `${normalizedBaseUrl}/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(date)}`;
 
     fetch(url)
       .then((res) => {
@@ -60,7 +65,7 @@ export function useStocks(
         setStatus('error');
       })
       .finally(() => setIsFetching(false));
-  }, [companyId, date, options?.view]);
+  }, [companyId, date]);
 
   useEffect(() => {
     if (!(companyId && date)) return;

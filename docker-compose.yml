@@ -31,7 +31,7 @@ services:
       context: ./frontend-next
       dockerfile: deploy/Dockerfile
     environment:
-      - STOCKS_API_BASE_URL=${STOCKS_API_BASE_URL}
+      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
     ports:
       - "3000:3000"
     depends_on:

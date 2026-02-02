@@ -41,7 +41,7 @@ export default async function DashboardPage() {
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold">Preferences</h2>
         <div className="mt-2 text-sm text-slate-600">
-          Theme: {preferences.theme} � Currency: {preferences.currency}
+          Theme: {preferences.theme} &middot; Currency: {preferences.currency}
         </div>
         <Link className="mt-3 inline-flex text-sm font-medium" href="/dashboard/preferences">
           Update preferences

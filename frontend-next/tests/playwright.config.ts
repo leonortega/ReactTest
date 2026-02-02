@@ -15,7 +15,7 @@ export default defineConfig({
     port: 3000,
     reuseExistingServer: !process.env.CI,
     env: {
-      STOCKS_API_BASE_URL: 'http://localhost:60480/api',
+      NEXT_PUBLIC_API_BASE_URL: 'http://localhost:60480/api',
       SKIP_SERVER_STOCKS_FETCH: 'true',
     },
   },

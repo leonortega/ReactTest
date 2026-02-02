@@ -21,8 +21,6 @@ pnpm-debug.log*
 # system files
 .DS_Store
 
-# testing
-/test-results
 
 # misc
 *.tsbuildinfo
