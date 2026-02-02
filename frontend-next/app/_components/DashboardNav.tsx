@@ -1,12 +1,12 @@
 import Link from 'next/link';
 
 const links = [
-  { href: '/app', label: 'Overview' },
-  { href: '/app/stocks/ABC', label: 'Stock analytics' },
-  { href: '/app/watchlists', label: 'Watchlists' },
-  { href: '/app/alerts', label: 'Alerts' },
-  { href: '/app/alerts/history', label: 'Alert history' },
-  { href: '/app/preferences', label: 'Preferences' },
+  { href: '/dashboard', label: 'Overview' },
+  { href: '/dashboard/stocks/ABC', label: 'Stock analytics' },
+  { href: '/dashboard/watchlists', label: 'Watchlists' },
+  { href: '/dashboard/alerts', label: 'Alerts' },
+  { href: '/dashboard/alerts/history', label: 'Alert history' },
+  { href: '/dashboard/preferences', label: 'Preferences' },
 ];
 
 export default function DashboardNav() {

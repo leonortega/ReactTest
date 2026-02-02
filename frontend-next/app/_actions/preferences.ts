@@ -30,6 +30,6 @@ export async function updatePreferences(formData: FormData) {
   } satisfies Preferences;
 
   await writeStore(storeFile, next);
-  revalidatePath('/app/preferences');
-  revalidatePath('/app');
+  revalidatePath('/dashboard/preferences');
+  revalidatePath('/dashboard');
 }
