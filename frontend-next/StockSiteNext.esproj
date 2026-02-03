@@ -7,4 +7,7 @@
     <BuildCommand>npm run build</BuildCommand>
     <BuildOutputFolder>$(MSBuildProjectDirectory)\.next</BuildOutputFolder>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include=".vscode\launch.json" />
+  </ItemGroup>
 </Project>

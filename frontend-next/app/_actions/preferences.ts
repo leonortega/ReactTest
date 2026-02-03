@@ -33,3 +33,17 @@ export async function updatePreferences(formData: FormData) {
   revalidatePath('/dashboard/preferences');
   revalidatePath('/dashboard');
 }
+
+export async function updateTheme(formData: FormData) {
+  const theme = String(formData.get('theme') ?? 'system') as Preferences['theme'];
+  const store = await readStore<Preferences>(storeFile, fallback);
+  const next = {
+    ...store,
+    theme,
+  } satisfies Preferences;
+
+  await writeStore(storeFile, next);
+  revalidatePath('/');
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/preferences');
+}
