@@ -1,13 +1,17 @@
 Overview
 
-This repository contains two projects (backend and frontend) used for a small stocks demo and tooling to run them locally or in Docker.
+This repository contains two projects (backend and frontend-next) used for a small stocks demo and tooling to run them locally or in Docker.
 
 Projects
 
 - `backend/StocksApi` - .NET 10 Web API that implements a vertical-slice style with MediatR. It exposes a stocks endpoint:
   - `GET /api/stocks/{companyId}?date={YYYY-MM-DD}` — returns an array of stock points for the requested company and date.
 
-- `frontend` - React (Vite) application that visualizes stock data. The frontend reads an environment variable `VITE_API_BASE_URL` to determine the backend base URL at runtime/build time.
+- `frontend-next` - Next.js application that visualizes stock data. The app reads `NEXT_PUBLIC_API_BASE_URL` to determine the backend base URL at runtime/build time.
+
+Why frontend-next replace frontend?
+
+The previous `frontend` project was replaced to standardize on Next.js for a single, modern frontend stack. `frontend-next` offers built-in routing, server-side rendering and static generation options, and a streamlined production build output for container deployments.
 
 Local development
 
@@ -22,24 +26,24 @@ dotnet run
 
 - By default `dotnet run` may start with HTTPS in development. For quick local testing you can configure the launch settings in the project or use HTTP URLs.
 
-Frontend
+Frontend-Next (Next.js)
 
 - Run the frontend dev server:
 
 ```bash
-cd frontend
+cd frontend-next
 npm install
 npm run dev
 ```
 
-- Dev proxy: the frontend Vite config supports a proxy to the API when `VITE_API_BASE_URL` is set in the environment or `.env` file. The project currently uses `VITE_API_BASE_URL` in `frontend/.env` to point the dev server to the backend.
+- Set `NEXT_PUBLIC_API_BASE_URL` in the environment or `.env.local` to point the app to the backend.
 
 Environment
 
-- Frontend reads `VITE_API_BASE_URL` to configure the API base URL. Example `.env`:
+- Frontend reads `NEXT_PUBLIC_API_BASE_URL` to configure the API base URL. Example `.env.local`:
 
 ```
-VITE_API_BASE_URL=http://localhost:60480/api
+NEXT_PUBLIC_API_BASE_URL=http://localhost:60480/api
 ```
 
 Tests
@@ -58,12 +62,12 @@ dotnet test backend/StocksApi.Tests
 dotnet test backend/StocksApi.IntegrationTests
 ```
 
-Frontend
+Frontend-Next (Next.js)
 
 - Unit tests:
 
 ```bash
-cd frontend
+cd frontend-next
 npm install
 npm test
 ```
@@ -71,14 +75,14 @@ npm test
 - Integration (end-to-end) tests:
 
 ```bash
-cd frontend
+cd frontend-next
 npm install
 npm run test:e2e
 ```
 
 Docker deployment
 
-This repository already includes Dockerfiles and a `docker-compose.yml` to build and run the backend and frontend together.
+This repository already includes Dockerfiles and a `docker-compose.yml` to build and run the backend and frontend-next together.
 
 To build and start both services with the provided compose file:
 
@@ -90,6 +94,6 @@ docker compose up --build
 docker-compose up --build
 ```
 
-The compose file builds the frontend with `VITE_API_BASE_URL` and exposes the configured ports. Check `docker-compose.yml` for the exact ports and service names used in this workspace.
+The compose file builds the frontend-next container and exposes the configured ports. Check `docker-compose.yml` for the exact ports and service names used in this workspace.
 
-If you prefer to build and run images manually you can still use the individual `Dockerfile`s in `backend/StocksApi` and `frontend` — the compose setup is provided for convenience and reproducibility.
+If you prefer to build and run images manually you can still use the individual `Dockerfile`s in `backend/StocksApi` and `frontend-next` — the compose setup is provided for convenience and reproducibility.

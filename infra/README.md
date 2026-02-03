@@ -39,7 +39,7 @@ Secrets required in GitHub repository settings:
 - `ACR_NAME`: ACR resource name
 - `ACR_LOGIN_SERVER`: ACR login server (e.g., `myregistry.azurecr.io`)
 - `ACR_RESOURCE_GROUP`: Resource group that hosts the ACR (optional if it matches `RESOURCE_GROUP`)
-- `VITE_API_BASE_URL`: Set to `/api` for the containerized deployment
+- `NEXT_PUBLIC_API_BASE_URL`: Set to `/api` for the containerized deployment
 - Optional (for credentials variant): `ACR_USERNAME`, `ACR_PASSWORD`
 
 ## Notes
