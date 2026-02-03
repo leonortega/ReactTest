@@ -28,7 +28,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" data-theme={themeAttribute}>
       <body className={`${inter.className} min-h-screen bg-slate-50 text-slate-900 antialiased`}>
-        <SiteHeader />
+        <SiteHeader theme={preferences.theme} />
         {children}
       </body>
     </html>
