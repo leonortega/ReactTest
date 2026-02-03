@@ -5,6 +5,9 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
+ARG NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+
 COPY package*.json ./
 ENV HUSKY=0
 RUN npm ci --ignore-scripts
@@ -18,6 +21,9 @@ RUN npm run build
 # Runtime stage
 # =========================
 FROM node:20-alpine
+
+ARG NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 
 ENV NODE_ENV=production
 WORKDIR /app

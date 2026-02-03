@@ -106,6 +106,8 @@ jobs:
           file: ./frontend-next/deploy/Dockerfile
           push: true
           tags: ${{ secrets.ACR_LOGIN_SERVER }}/frontend-next:${{ env.IMAGE_TAG }}
+          build-args: |
+            NEXT_PUBLIC_API_BASE_URL=${{ secrets.NEXT_PUBLIC_API_BASE_URL }}
 
       - name: Validate images in ACR
         run: |
