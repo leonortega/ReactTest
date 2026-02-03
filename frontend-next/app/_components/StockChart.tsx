@@ -114,8 +114,25 @@ export default function StockChart({
     return { labels, prices, sma, ema, rsi };
   }, [stockData, smaWindow, emaWindow, rsiWindow]);
 
-  const options: ChartOptions<'line'> = useMemo(
-    () => ({
+  const options: ChartOptions<'line'> = useMemo(() => {
+    const scales: ChartOptions<'line'>['scales'] = {
+      x: { display: true, title: { display: true, text: 'Time (UTC)' } },
+      y: { display: true, title: { display: true, text: 'Price' } },
+    };
+
+    if (showRSI) {
+      scales.rsi = {
+        type: 'linear',
+        display: true,
+        position: 'right',
+        min: 0,
+        max: 100,
+        grid: { drawOnChartArea: false },
+        title: { display: true, text: 'RSI' },
+      };
+    }
+
+    return {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
@@ -132,23 +149,9 @@ export default function StockChart({
         },
       },
       interaction: { mode: 'nearest', axis: 'x', intersect: false },
-      scales: {
-        x: { display: true, title: { display: true, text: 'Time (UTC)' } },
-        y: { display: true, title: { display: true, text: 'Price' } },
-        rsi: showRSI
-          ? {
-              display: true,
-              position: 'right',
-              min: 0,
-              max: 100,
-              grid: { drawOnChartArea: false },
-              title: { display: true, text: 'RSI' },
-            }
-          : undefined,
-      },
-    }),
-    [showRSI],
-  );
+      scales,
+    };
+  }, [showRSI]);
 
   const dataForChart: ChartData<'line', number[], string> = useMemo(() => {
     if (!chartData) return { labels: [], datasets: [] };
