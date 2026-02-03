@@ -38,6 +38,8 @@ resource web 'Microsoft.Web/sites@2022-03-01' = {
     siteConfig: {
       // Sidecar-enabled custom containers are designated by linuxFxVersion=sitecontainers
       linuxFxVersion: 'sitecontainers'
+      acrUseManagedIdentityCreds: true
+      acrUserManagedIdentityID: ''
     }
   }
 }

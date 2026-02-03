@@ -22,6 +22,8 @@ FROM node:20-alpine
 ENV NODE_ENV=production
 WORKDIR /app
 
+RUN apk add --no-cache wget
+
 COPY --from=build /app/public ./public
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
