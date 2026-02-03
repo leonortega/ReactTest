@@ -84,15 +84,23 @@ jobs:
           push: true
           tags: ${{ secrets.ACR_LOGIN_SERVER }}/stocksapi:${{ env.IMAGE_TAG }}
 
-      - name: Build & push frontend image
+      # - name: Build & push frontend image
+      #   uses: docker/build-push-action@v4
+      #   with:
+      #     context: ./frontend
+      #     file: ./frontend/deploy/Dockerfile
+      #     push: true
+      #     tags: ${{ secrets.ACR_LOGIN_SERVER }}/frontend:${{ env.IMAGE_TAG }}
+      #     build-args: |
+      #       VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
+
+      - name: Build & push frontend-next image
         uses: docker/build-push-action@v4
         with:
-          context: ./frontend
-          file: ./frontend/deploy/Dockerfile
+          context: ./frontend-next
+          file: ./frontend-next/deploy/Dockerfile
           push: true
-          tags: ${{ secrets.ACR_LOGIN_SERVER }}/frontend:${{ env.IMAGE_TAG }}
-          build-args: |
-            VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/frontend-next:${{ env.IMAGE_TAG }}
 
       - name: Deploy sidecar-enabled containers (sitecontainers)
         run: |
@@ -106,10 +114,16 @@ jobs:
           SITE_ID="/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RG/providers/Microsoft.Web/sites/$WEBAPP"
 
           # Main container (externally reachable): frontend
+          # az rest --method PUT \
+          #   --url "https://management.azure.com$SITE_ID/sitecontainers/frontend?api-version=$API_VERSION" \
+          #   --headers "Content-Type=application/json" \
+          #   --body "{\"name\":\"frontend\",\"properties\":{\"image\":\"${ACR_LOGIN_SERVER}/frontend:${IMAGE_TAG}\",\"isMain\":true,\"targetPort\":${{ env.FRONTEND_PORT }}}}"
+
+          # Main container (externally reachable): frontend-next
           az rest --method PUT \
-            --url "https://management.azure.com$SITE_ID/sitecontainers/frontend?api-version=$API_VERSION" \
+            --url "https://management.azure.com$SITE_ID/sitecontainers/frontend-next?api-version=$API_VERSION" \
             --headers "Content-Type=application/json" \
-            --body "{\"name\":\"frontend\",\"properties\":{\"image\":\"${ACR_LOGIN_SERVER}/frontend:${IMAGE_TAG}\",\"isMain\":true,\"targetPort\":${{ env.FRONTEND_PORT }}}}"
+            --body "{\"name\":\"frontend-next\",\"properties\":{\"image\":\"${ACR_LOGIN_SERVER}/frontend-next:${IMAGE_TAG}\",\"isMain\":true,\"targetPort\":${{ env.FRONTEND_PORT }}}}"
 
           # Sidecar container (internal): stocksapi
           az rest --method PUT \
