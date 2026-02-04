@@ -42,10 +42,11 @@ export async function GET(request: Request) {
     );
   }
 
-  const baseUrl = (
-    process.env.NEXT_PUBLIC_API_BASE_URL ||
-    defaultBaseUrl
-  ).replace(/\/$/, '');
+  const configuredBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
+  const resolvedBaseUrl = configuredBaseUrl.startsWith('http')
+    ? configuredBaseUrl
+    : defaultBaseUrl;
+  const baseUrl = resolvedBaseUrl.replace(/\/$/, '');
   const apiUrl = `${baseUrl}/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(date)}&view=${encodeURIComponent(view)}`;
 
   try {

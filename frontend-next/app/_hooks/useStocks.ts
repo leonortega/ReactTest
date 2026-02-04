@@ -48,7 +48,7 @@ export function useStocks(
     const normalizedBaseUrl = apiBaseUrl.endsWith('/')
       ? apiBaseUrl.slice(0, -1)
       : apiBaseUrl;
-    const url = `${normalizedBaseUrl}/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(date)}`;
+    const url = `${normalizedBaseUrl}/stocks?companyId=${encodeURIComponent(companyId)}&date=${encodeURIComponent(date)}`;
 
     fetch(url)
       .then((res) => {
