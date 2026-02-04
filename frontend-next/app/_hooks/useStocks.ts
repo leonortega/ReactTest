@@ -41,14 +41,8 @@ export function useStocks(
     setIsFetching(true);
     setError(null);
 
-    const apiBaseUrl =
-      process.env.NEXT_PUBLIC_API_BASE_URL ??
-      process.env.VITE_API_BASE_URL ??
-      '/api';
-    const normalizedBaseUrl = apiBaseUrl.endsWith('/')
-      ? apiBaseUrl.slice(0, -1)
-      : apiBaseUrl;
-    const url = `${normalizedBaseUrl}/stocks?companyId=${encodeURIComponent(companyId)}&date=${encodeURIComponent(date)}`;
+    const baseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '');
+    const url = `${baseUrl}/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(date)}`;
 
     fetch(url)
       .then((res) => {

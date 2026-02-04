@@ -25,10 +25,10 @@ function checkRateLimit(key: string) {
 }
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const companyId = searchParams.get('companyId');
+  const { searchParams, pathname } = new URL(request.url);
+  const pathCompanyId = pathname.replace('/api/stocks/', '').split('/')[0];
+  const companyId = searchParams.get('companyId') ?? (pathCompanyId ? decodeURIComponent(pathCompanyId) : null);
   const date = searchParams.get('date');
-  const view = searchParams.get('view') ?? 'intraday';
 
   if (!companyId || !date) {
     return NextResponse.json({ error: 'companyId and date are required' }, { status: 400 });
@@ -43,11 +43,8 @@ export async function GET(request: Request) {
   }
 
   const configuredBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
-  const resolvedBaseUrl = configuredBaseUrl.startsWith('http')
-    ? configuredBaseUrl
-    : defaultBaseUrl;
-  const baseUrl = resolvedBaseUrl.replace(/\/$/, '');
-  const apiUrl = `${baseUrl}/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(date)}&view=${encodeURIComponent(view)}`;
+  const baseUrl = (configuredBaseUrl.startsWith('http') ? configuredBaseUrl : defaultBaseUrl).replace(/\/$/, '');
+  const apiUrl = `${baseUrl}/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(date)}`;
 
   try {
     const response = await fetch(apiUrl, { next: { revalidate: 10 } });
