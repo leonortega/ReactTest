@@ -8,6 +8,7 @@
 - Run lint checks for both backend and frontend before committing changes to ensure code quality and consistency.
 - Use Husky v9+ for managing Git hooks; avoid the deprecated `npx husky install` command.
 - When a change is requested, apply it without asking for confirmation.
+- Use the account marcelo.ortega@outlook.com for Azure-related actions instead of the Endava account.
 
 ## API Routing Guidelines
 - Use only `/api/stocks/{companyId}` for stock-related API calls.
