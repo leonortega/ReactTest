@@ -9,6 +9,10 @@
 - Use Husky v9+ for managing Git hooks; avoid the deprecated `npx husky install` command.
 - When a change is requested, apply it without asking for confirmation.
 
+## API Routing Guidelines
+- Use only `/api/stocks/{companyId}` for stock-related API calls.
+- Handle routing exclusively in `app/api/stocks/[companyId]/route.ts`; remove `app/api/stocks/route.ts`.
+
 ## Testing Guidelines
 - Include an E2E test named `app.spec.ts` in the test files.
 - Maintain a `test-results` folder in the workspace for storing test outputs.

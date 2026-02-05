@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import type { StockData } from '../../_lib/types';
+import { NextResponse, type NextRequest } from 'next/server';
+import type { StockData } from '../../../_lib/types';
 
 const defaultBaseUrl = 'http://localhost:8080/api';
 const cacheHeader = 's-maxage=10, stale-while-revalidate=59';
@@ -24,10 +24,13 @@ function checkRateLimit(key: string) {
   return true;
 }
 
-export async function GET(request: Request) {
-  const { searchParams, pathname } = new URL(request.url);
-  const pathCompanyId = pathname.replace('/api/stocks/', '').split('/')[0];
-  const companyId = searchParams.get('companyId') ?? (pathCompanyId ? decodeURIComponent(pathCompanyId) : null);
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ companyId: string }> },
+) {
+  const { searchParams } = new URL(request.url);
+  const resolvedParams = await params;
+  const companyId = resolvedParams.companyId ? decodeURIComponent(resolvedParams.companyId) : null;
   const date = searchParams.get('date');
 
   if (!companyId || !date) {
@@ -42,8 +45,11 @@ export async function GET(request: Request) {
     );
   }
 
-  const configuredBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
-  const baseUrl = (configuredBaseUrl.startsWith('http') ? configuredBaseUrl : defaultBaseUrl).replace(/\/$/, '');
+  const configuredBaseUrl = process.env.INTERNAL_API_BASE_URL ?? '';
+  const baseUrl = (configuredBaseUrl.startsWith('http') ? configuredBaseUrl : defaultBaseUrl).replace(
+    /\/$/,
+    '',
+  );
   const apiUrl = `${baseUrl}/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(date)}`;
 
   try {
