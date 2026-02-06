@@ -36,15 +36,16 @@ npm install
 npm run dev
 ```
 
-- Set `NEXT_PUBLIC_API_BASE_URL` in the environment or `.env.local` to point the app to the backend.
+- The client uses the Next API proxy (`/api/stocks/...`) so you do not normally need to set a public API base URL for the browser bundle. The server-side proxy uses the `INTERNAL_API_BASE_URL` environment variable to reach the backend API (for example when running in Docker or Azure).
 
 Environment
 
-- Frontend reads `NEXT_PUBLIC_API_BASE_URL` to configure the API base URL. Example `.env.local`:
+- For local development you can keep an `.env` or `.env.local` containing the internal backend host used by the server route. Example `.env`:
 
 ```
-NEXT_PUBLIC_API_BASE_URL=http://localhost:60480/api
+INTERNAL_API_BASE_URL=http://stocksapi/api
 ```
+Note: the browser-side code calls `/api/stocks/...` (Next proxy) — do not rely on exposing internal hostnames in client env values.
 
 Tests
 
