@@ -33,18 +33,20 @@ type StockChartProps = {
 };
 
 function computeSMA(values: number[], window: number) {
+  if (!values || values.length === 0) return [];
   if (window <= 1) return values.slice();
   const result: number[] = [];
   for (let i = 0; i < values.length; i++) {
     const start = Math.max(0, i - window + 1);
     const slice = values.slice(start, i + 1);
     const avg = slice.reduce((s, v) => s + v, 0) / slice.length;
-    result.push(Number(avg.toFixed(2)));
+    result.push(Math.round(avg * 100) / 100);
   }
   return result;
 }
 
 function computeEMA(values: number[], window: number) {
+  if (!values || values.length === 0) return [];
   if (window <= 1) return values.slice();
   const multiplier = 2 / (window + 1);
   const result: number[] = [];
@@ -55,12 +57,13 @@ function computeEMA(values: number[], window: number) {
     }
     const prev = result[i - 1];
     const next = (values[i] - prev) * multiplier + prev;
-    result.push(Number(next.toFixed(2)));
+    result.push(Math.round(next * 100) / 100);
   }
   return result;
 }
 
 function computeRSI(values: number[], window: number) {
+  if (!values || values.length === 0) return [];
   if (window <= 1) return values.map(() => 50);
   const result: number[] = [];
   let avgGain = 0;
@@ -80,7 +83,7 @@ function computeRSI(values: number[], window: number) {
       avgLoss = (avgLoss * (window - 1) + loss) / window;
       const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
       const rsi = 100 - 100 / (1 + rs);
-      result.push(Number(rsi.toFixed(2)));
+      result.push(Math.round(rsi * 100) / 100);
     }
   }
 

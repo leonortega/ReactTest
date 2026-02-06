@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import SiteHeader from './_components/SiteHeader';
+import SWRProviderClient from './_components/SWRProviderClient';
 import { readStore } from './_lib/storage';
 import type { Preferences } from './_lib/types';
 
@@ -28,8 +29,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" data-theme={themeAttribute}>
       <body className={`${inter.className} min-h-screen bg-slate-50 text-slate-900 antialiased`}>
-        <SiteHeader theme={preferences.theme} />
-        {children}
+        <SWRProviderClient>
+          <SiteHeader theme={preferences.theme} />
+          {children}
+        </SWRProviderClient>
       </body>
     </html>
   );

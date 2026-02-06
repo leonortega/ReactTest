@@ -1,8 +1,7 @@
 import { promises as fs } from 'fs';
-import path from 'path';
-
+import { join } from 'path';
 function getDataDir() {
-  return process.env.MP_DATA_DIR ?? path.join(process.cwd(), 'data');
+  return process.env.MP_DATA_DIR ?? join(process.cwd(), 'data');
 }
 
 async function ensureDir() {
@@ -11,7 +10,7 @@ async function ensureDir() {
 
 async function ensureFile<T>(fileName: string, fallback: T) {
   await ensureDir();
-  const filePath = path.join(getDataDir(), fileName);
+  const filePath = join(getDataDir(), fileName);
   try {
     await fs.access(filePath);
   } catch {
@@ -23,7 +22,12 @@ async function ensureFile<T>(fileName: string, fallback: T) {
 export async function readStore<T>(fileName: string, fallback: T): Promise<T> {
   const filePath = await ensureFile(fileName, fallback);
   const raw = await fs.readFile(filePath, 'utf-8');
-  return JSON.parse(raw) as T;
+  try {
+    return JSON.parse(raw) as T;
+  } catch (err) {
+    await fs.writeFile(filePath, JSON.stringify(fallback, null, 2), 'utf-8');
+    return fallback;
+  }
 }
 
 export async function writeStore<T>(fileName: string, data: T) {

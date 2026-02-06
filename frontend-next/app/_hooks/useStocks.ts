@@ -1,7 +1,9 @@
-'use client';
+ 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRef } from 'react';
+import useSWR from 'swr';
 import type { StockData } from '../_lib/types';
+import fetchJson from '../_lib/fetcher';
 
 export interface UseStocksOptions {
   initialData?: StockData[];
@@ -22,73 +24,47 @@ export function useStocks(
   date: string,
   options?: UseStocksOptions,
 ): UseStocksResult {
-  const [stockData, setStockData] = useState<StockData[]>(options?.initialData ?? []);
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>(
-    options?.initialData ? 'success' : 'idle',
-  );
-  const [error, setError] = useState<string | null>(null);
-  const [isFetching, setIsFetching] = useState(false);
-  const [lastFetchTime, setLastFetchTime] = useState<number | null>(
-    options?.initialLastFetchTime ?? null,
-  );
+
   const initialKeyRef = useRef(`${companyId}-${date}`);
-  const hasUsedInitialRef = useRef(false);
 
-  const fetchStocks = useCallback(() => {
-    if (!companyId || !date) return;
+  const key = companyId && date ? `/api/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(date)}` : null;
+  const controllersRef = useRef<Record<string, AbortController | null>>({}); // No changes made
 
-    setStatus('loading');
-    setIsFetching(true);
-    setError(null);
-
-    const baseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '');
-    const url = `${baseUrl}/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(date)}`;
-
-    fetch(url)
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to fetch stocks');
-        return res.json();
-      })
-      .then((data) => {
-        setStockData(data);
-        setStatus('success');
-        setLastFetchTime(Date.now());
-      })
-      .catch((err) => {
-        setError(err.message);
-        setStatus('error');
-      })
-      .finally(() => setIsFetching(false));
-  }, [companyId, date]);
-
-  useEffect(() => {
-    if (!(companyId && date)) return;
-
-    const key = `${companyId}-${date}`;
-    if (!hasUsedInitialRef.current && options?.initialData && key === initialKeyRef.current) {
-      hasUsedInitialRef.current = true;
-      return;
+  const fetcher = async (url: string) => {
+    // cancel any previous inflight request for the same key
+    try {
+      controllersRef.current[url]?.abort();
+    } catch {
+      /* ignore */
     }
+    const controller = new AbortController();
+    controllersRef.current[url] = controller;
 
-    fetchStocks();
-  }, [companyId, date, fetchStocks, options?.initialData]);
+    try {
+      return await fetchJson<StockData[]>(url, controller.signal);
+    } finally {
+      // clear controller after request settles
+      if (controllersRef.current[url] === controller) controllersRef.current[url] = null;
+    }
+  };
 
-  useEffect(() => {
-    if (!(companyId && date)) return;
+  const { data, error, isValidating, mutate } = useSWR<StockData[]>(key, fetcher, {
+    refreshInterval: 5000,
+    revalidateOnFocus: false,
+    dedupingInterval: 5000,
+    fallbackData: options?.initialData,
+  });
 
-    const id = window.setInterval(() => {
-      fetchStocks();
-    }, 5000);
-
-    return () => window.clearInterval(id);
-  }, [companyId, date, fetchStocks]);
+  const status: 'idle' | 'loading' | 'success' | 'error' = key === null ? 'idle' : isValidating && !data ? 'loading' : error ? 'error' : 'success';
 
   return {
-    stockData,
+    stockData: data ?? [],
     status,
-    error,
-    refetch: fetchStocks,
-    isFetching,
-    lastFetchTime,
+    error: error ? String(error.message) : null,
+    refetch: () => {
+      void mutate();
+    },
+    isFetching: Boolean(isValidating),
+    lastFetchTime: status === 'success' ? Date.now() : options?.initialLastFetchTime ?? null,
   };
 }

@@ -1,22 +1,14 @@
 import type { StockData } from './types';
-
-const defaultBaseUrl = 'http://localhost:8080/api';
+import fetchJson from './fetcher';
 
 export async function fetchStockData(
   companyId: string,
   date: string,
   view: 'intraday' | 'historical' = 'intraday',
 ): Promise<StockData[]> {
-  const baseUrl = (
-    process.env.NEXT_PUBLIC_API_BASE_URL ||
-    defaultBaseUrl
-  ).replace(/\/$/, '');
-  const apiUrl = `${baseUrl}/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(date)}&view=${encodeURIComponent(view)}`;
+  const apiUrl = `/api/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(
+    date,
+  )}&view=${encodeURIComponent(view)}`;
 
-  const response = await fetch(apiUrl, { next: { revalidate: 10 } });
-  if (!response.ok) {
-    throw new Error('Failed to fetch stocks');
-  }
-
-  return response.json();
+  return await fetchJson<StockData[]>(apiUrl);
 }

@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
+import useDebouncedValue from '../_hooks/useDebouncedValue';
 import { useStocks } from '../_hooks/useStocks';
 import type { StockData } from '../_lib/types';
 import StockChart from './StockChart';
@@ -33,22 +34,14 @@ export default function AppClient({
   const [smaWindow, setSmaWindow] = useState(5);
   const [emaWindow, setEmaWindow] = useState(8);
   const [rsiWindow, setRsiWindow] = useState(14);
-  const debounceRef = useRef<number | undefined>(undefined);
+
+  const debouncedCompanyId = useDebouncedValue(tempCompanyId, 600);
+  const debouncedDate = useDebouncedValue(tempDate, 600);
 
   useEffect(() => {
-    clearTimeout(debounceRef.current);
-    debounceRef.current = window.setTimeout(() => {
-      setCompanyId((prev: string) => {
-        if (prev !== tempCompanyId) return tempCompanyId;
-        return prev;
-      });
-      setDate((prev: string) => {
-        if (prev !== tempDate) return tempDate;
-        return prev;
-      });
-    }, 600);
-    return () => clearTimeout(debounceRef.current);
-  }, [tempCompanyId, tempDate]);
+    setCompanyId((prev: string) => (prev !== debouncedCompanyId ? debouncedCompanyId : prev));
+    setDate((prev: string) => (prev !== debouncedDate ? debouncedDate : prev));
+  }, [debouncedCompanyId, debouncedDate]);
 
   const {
     stockData = [],
@@ -221,12 +214,15 @@ export default function AppClient({
                 </tr>
               </thead>
               <tbody>
-                {stockData.map((s) => (
-                  <tr key={s.dateTime} className="odd:bg-white even:bg-slate-50">
-                    <td className="p-2 align-top">{new Date(s.dateTime).toISOString()}</td>
-                    <td className="p-2 align-top">{Number(s.price).toFixed(2)}</td>
-                  </tr>
-                ))}
+                {stockData.map((s) => {
+                  const iso = new Date(s.dateTime).toISOString();
+                  return (
+                    <tr key={s.dateTime} className="odd:bg-white even:bg-slate-50">
+                      <td className="p-2 align-top">{iso}</td>
+                      <td className="p-2 align-top">{Math.round(Number(s.price) * 100) / 100}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
