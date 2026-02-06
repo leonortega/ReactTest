@@ -35,7 +35,7 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddHealthChecks();
 
 // Application services
-builder.Services.AddScoped<IStockRepository, InMemoryStockRepository>();
+builder.Services.AddSingleton<IStockRepository, InMemoryStockRepository>();
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(GetStockValueHandler).Assembly));
 

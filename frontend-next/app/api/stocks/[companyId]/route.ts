@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import type { StockData } from '../../../_lib/types';
 
 const defaultBaseUrl = 'http://localhost:8080/api';
-const cacheHeader = 's-maxage=10, stale-while-revalidate=59';
+// Do not cache responses for polling clients
+const cacheHeader = 'no-store';
 const rateLimit = new Map<string, { count: number; resetAt: number }>();
 const maxRequestsPerWindow = 60;
 const windowMs = 60_000;
@@ -38,7 +39,9 @@ export async function GET(
   }
 
   const ip = request.headers.get('x-forwarded-for') ?? 'local';
-  if (!checkRateLimit(ip)) {
+  const rateKey = `${ip}|${companyId}|${date}`;
+
+  if (ip !== 'local' && !checkRateLimit(rateKey)) {
     return NextResponse.json(
       { error: 'Rate limit exceeded' },
       { status: 429, headers: { 'Cache-Control': cacheHeader } },
@@ -53,7 +56,7 @@ export async function GET(
   const apiUrl = `${baseUrl}/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(date)}`;
 
   try {
-    const response = await fetch(apiUrl, { next: { revalidate: 10 } });
+    const response = await fetch(apiUrl, { cache: 'no-store' });
     if (!response.ok) {
       return NextResponse.json(
         { error: 'Failed to fetch stocks' },

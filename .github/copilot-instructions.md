@@ -13,6 +13,7 @@
 ## API Routing Guidelines
 - Use only `/api/stocks/{companyId}` for stock-related API calls.
 - Handle routing exclusively in `app/api/stocks/[companyId]/route.ts`; remove `app/api/stocks/route.ts`.
+- Each API call should append exactly one new stock price point to the repository for the requested company/date.
 
 ## Testing Guidelines
 - Include an E2E test named `app.spec.ts` in the test files.
