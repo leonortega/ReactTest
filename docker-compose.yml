@@ -11,15 +11,29 @@ services:
     networks:
       - app-network
 
-  frontend:
-    image: frontend:dev
+  # frontend:
+  #   image: frontend:dev
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: deploy/Dockerfile
+  #     args:
+  #       - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+  #   ports:
+  #     - "5173:80"
+  #   depends_on:
+  #     - stocksapi
+  #   networks:
+  #     - app-network
+
+  frontend-next:
+    image: frontend-next:dev
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: ./frontend-next
+      dockerfile: deploy/Dockerfile
       args:
-        - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+        - INTERNAL_API_BASE_URL=${INTERNAL_API_BASE_URL}
     ports:
-      - "5173:80"
+      - "3000:3000"
     depends_on:
       - stocksapi
     networks:

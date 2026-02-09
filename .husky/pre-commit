@@ -3,6 +3,7 @@
 
 cd frontend
 npm run lint:staged
+npm run format:check
 
 cd ..
 dotnet format backend/StocksApi/StocksApi.csproj --verify-no-changes

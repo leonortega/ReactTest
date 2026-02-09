@@ -11,6 +11,7 @@
   <ItemGroup>
     <None Remove=".github\**" />
     <None Remove=".husky\**" />
+    <None Remove="frontend-next\**" />
     <None Remove="infra\**" />
   </ItemGroup>
   <ItemGroup>
