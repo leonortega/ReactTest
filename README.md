@@ -5,7 +5,7 @@ This repository contains two projects (backend and frontend-next) used for a sma
 Projects
 
 - `backend/StocksApi` - .NET 10 Web API that implements a vertical-slice style with MediatR. It exposes a stocks endpoint:
-  - `GET /api/stocks/{companyId}?date={YYYY-MM-DD}` — returns an array of stock points for the requested company and date.
+  - `GET /api/stocks/{companyId}?date={YYYY-MM-DD}` â€” returns an array of stock points for the requested company and date.
 
 - `frontend-next` - Next.js application that visualizes stock data. The app reads `NEXT_PUBLIC_API_BASE_URL` to determine the backend base URL at runtime/build time.
 
@@ -45,7 +45,7 @@ Environment
 ```
 INTERNAL_API_BASE_URL=http://stocksapi/api
 ```
-Note: the browser-side code calls `/api/stocks/...` (Next proxy) — do not rely on exposing internal hostnames in client env values.
+Note: the browser-side code calls `/api/stocks/...` (Next proxy) â€” do not rely on exposing internal hostnames in client env values.
 
 Tests
 
@@ -97,4 +97,4 @@ docker-compose up --build
 
 The compose file builds the frontend-next container and exposes the configured ports. Check `docker-compose.yml` for the exact ports and service names used in this workspace.
 
-If you prefer to build and run images manually you can still use the individual `Dockerfile`s in `backend/StocksApi` and `frontend-next` — the compose setup is provided for convenience and reproducibility.
+If you prefer to build and run images manually you can still use the individual `Dockerfile`s in `backend/StocksApi` and `frontend-next` â€” the compose setup is provided for convenience and reproducibility.
