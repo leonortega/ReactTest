@@ -1,7 +1,7 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 
 test('loads stocks data and shows table', async ({ page }: { page: Page }) => {
-  await page.route('**/api/stocks?**', async (route: Route) => {
+  await page.route('**/api/stocks**', async (route: Route) => {
     await route.fulfill({
       json: [
         { companyId: 'ABC', dateTime: '2024-01-01T10:00:00Z', price: 100.5 },

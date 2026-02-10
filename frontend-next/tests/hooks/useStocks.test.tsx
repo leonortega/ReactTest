@@ -1,13 +1,17 @@
-import { renderHook } from '@testing-library/react';
-import { act } from 'react';
+import { renderHook, waitFor } from '@testing-library/react';
+import { SWRConfig } from 'swr';
 import { vi } from 'vitest';
 import { useStocks } from '../../app/_hooks/useStocks';
+import type { ReactNode } from 'react';
+
+const swrWrapper = ({ children }: { children?: ReactNode }) => (
+  <SWRConfig value={{ provider: () => new Map() }}>{children}</SWRConfig>
+);
 
 describe('useStocks', () => {
   const stockResponse = [{ dateTime: '2024-01-01T10:00:00Z', price: 100.5 }];
 
   beforeEach(() => {
-    vi.useFakeTimers();
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => stockResponse,
@@ -15,36 +19,28 @@ describe('useStocks', () => {
   });
 
   afterEach(() => {
-    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
-  it('fetches data on mount and on interval', async () => {
-    renderHook(() => useStocks('ABC', '2024-01-01'));
+  it('fetches data on mount', async () => {
+    const { result } = renderHook(() => useStocks('ABC', '2024-01-01'), { wrapper: swrWrapper });
 
-    await act(async () => {
-      await Promise.resolve();
+    await waitFor(() => {
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     });
 
-    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(5000);
-    });
-
-    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+    expect(result.current.stockData).toEqual(stockResponse);
   });
 
   it('uses company and date in request URL', async () => {
-    renderHook(() => useStocks('ABC', '2024-01-01'));
+    const { result } = renderHook(() => useStocks('ABC', '2024-01-01'), { wrapper: swrWrapper });
 
-    await act(async () => {
-      await Promise.resolve();
+    await waitFor(() => {
+      expect(globalThis.fetch).toHaveBeenCalled();
     });
 
-    expect(globalThis.fetch).toHaveBeenCalled();
-
     const [url] = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(url).toContain('/api/stocks?companyId=ABC&date=2024-01-01&view=intraday');
+    expect(url).toContain('/api/stocks/ABC?date=2024-01-01');
+    expect(result.current.status).toBe('success');
   });
 });

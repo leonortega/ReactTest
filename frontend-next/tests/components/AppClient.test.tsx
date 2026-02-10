@@ -29,7 +29,9 @@ describe('AppClient', () => {
     expect(screen.getByText('Show SMA')).toBeInTheDocument();
     expect(screen.getByText('Show EMA')).toBeInTheDocument();
     expect(screen.getByText('Show RSI')).toBeInTheDocument();
-    expect(screen.getByLabelText('Data view')).toBeInTheDocument();
+    expect(screen.getByRole('form', { name: 'Stock query form' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Company ID')).toHaveValue('ABC');
+    expect(screen.getByLabelText('Date')).toHaveValue('2024-01-01');
   });
 
   it('reveals EMA and RSI windows when toggled', async () => {
