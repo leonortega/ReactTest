@@ -24,7 +24,7 @@ describe('AppClient', () => {
 
     const { default: AppClient } = await import('../../app/_components/AppClient');
 
-    render(<AppClient initialCompanyId="ABC" initialDate="2024-01-01" initialStockData={[]} />);
+    render(<AppClient initialCompanyId="ABC" initialDate="2024-01-01" />);
 
     expect(screen.getByText('Show SMA')).toBeInTheDocument();
     expect(screen.getByText('Show EMA')).toBeInTheDocument();
@@ -47,7 +47,7 @@ describe('AppClient', () => {
 
     const { default: AppClient } = await import('../../app/_components/AppClient');
 
-    render(<AppClient initialCompanyId="ABC" initialDate="2024-01-01" initialStockData={[]} />);
+    render(<AppClient initialCompanyId="ABC" initialDate="2024-01-01" />);
 
     fireEvent.click(screen.getByLabelText('Show EMA'));
     fireEvent.click(screen.getByLabelText('Show RSI'));

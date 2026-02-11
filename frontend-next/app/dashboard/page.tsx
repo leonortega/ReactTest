@@ -3,16 +3,16 @@ import { readStore } from '../_lib/storage';
 import type { Alert, Notification, Preferences, Watchlist } from '../_lib/types';
 
 export default async function DashboardPage() {
-  const watchlists = await readStore<{ items: Watchlist[] }>('watchlists.json', { items: [] });
-  const alerts = await readStore<{ items: Alert[] }>('alerts.json', { items: [] });
-  const notifications = await readStore<{ items: Notification[] }>('notifications.json', {
-    items: [],
-  });
-  const preferences = await readStore<Preferences>('preferences.json', {
-    theme: 'system',
-    currency: 'USD',
-    notifications: { email: true, inApp: true },
-  });
+  const [watchlists, alerts, notifications, preferences] = await Promise.all([
+    readStore<{ items: Watchlist[] }>('watchlists.json', { items: [] }),
+    readStore<{ items: Alert[] }>('alerts.json', { items: [] }),
+    readStore<{ items: Notification[] }>('notifications.json', { items: [] }),
+    readStore<Preferences>('preferences.json', {
+      theme: 'system',
+      currency: 'USD',
+      notifications: { email: true, inApp: true },
+    }),
+  ]);
 
   return (
     <div className="grid gap-6">

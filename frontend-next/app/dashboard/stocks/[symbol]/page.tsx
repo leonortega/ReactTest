@@ -1,7 +1,5 @@
 import StockAnalyticsPage from '../../../_components/StockAnalyticsPage';
 
-export const revalidate = 10;
-
 export async function generateMetadata({
   params,
 }: {

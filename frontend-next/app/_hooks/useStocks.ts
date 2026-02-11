@@ -1,13 +1,13 @@
- 'use client';
+'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import useSWR from 'swr';
 import type { StockData } from '../_lib/types';
-import fetchJson from '../_lib/fetcher';
 
-export interface UseStocksOptions {
-  initialData?: StockData[];
-  initialLastFetchTime?: number | null;
+async function fetchJson<T>(url: string, signal?: AbortSignal): Promise<T> {
+  const response = await fetch(url, signal ? { signal } : undefined);
+  if (!response.ok) throw new Error('Failed to fetch');
+  return (await response.json()) as T;
 }
 
 export interface UseStocksResult {
@@ -22,16 +22,16 @@ export interface UseStocksResult {
 export function useStocks(
   companyId: string,
   date: string,
-  options?: UseStocksOptions,
 ): UseStocksResult {
+  const [lastFetchTime, setLastFetchTime] = useState<number | null>(null);
 
-  const initialKeyRef = useRef(`${companyId}-${date}`);
-
-  const key = companyId && date ? `/api/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(date)}` : null;
-  const controllersRef = useRef<Record<string, AbortController | null>>({}); // No changes made
+  const key =
+    companyId && date
+      ? `/api/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(date)}`
+      : null;
+  const controllersRef = useRef<Record<string, AbortController | null>>({});
 
   const fetcher = async (url: string) => {
-    // cancel any previous inflight request for the same key
     try {
       controllersRef.current[url]?.abort();
     } catch {
@@ -43,7 +43,6 @@ export function useStocks(
     try {
       return await fetchJson<StockData[]>(url, controller.signal);
     } finally {
-      // clear controller after request settles
       if (controllersRef.current[url] === controller) controllersRef.current[url] = null;
     }
   };
@@ -52,7 +51,9 @@ export function useStocks(
     refreshInterval: 5000,
     revalidateOnFocus: false,
     dedupingInterval: 5000,
-    fallbackData: options?.initialData,
+    onSuccess: () => {
+      setLastFetchTime(Date.now());
+    },
   });
 
   const status: 'idle' | 'loading' | 'success' | 'error' = key === null ? 'idle' : isValidating && !data ? 'loading' : error ? 'error' : 'success';
@@ -65,6 +66,6 @@ export function useStocks(
       void mutate();
     },
     isFetching: Boolean(isValidating),
-    lastFetchTime: status === 'success' ? Date.now() : options?.initialLastFetchTime ?? null,
+    lastFetchTime,
   };
 }

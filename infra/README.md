@@ -1,10 +1,9 @@
 # Infra Bicep
 
-This folder contains a Bicep template (`main.bicep`) and a sample parameters file (`parameters.json`) to create an Azure App Service Plan (Linux), a Linux Web App with a system-assigned identity, and assign `AcrPull` role on an existing Azure Container Registry.
+This folder contains a Bicep template (`main.bicep`) that deploys an App Service Plan (Linux), a Linux Web App with a system-assigned identity, and assigns `AcrPull` role on an existing Azure Container Registry. Supply the required parameter values (web app/plan names and location) either inline with your deployment command or via your own parameters file.
 
 ## Files
 - `main.bicep` - Bicep template to create the App Service Plan, Web App, and role assignment.
-- `parameters.json` - Sample parameters file. Update values before deploying.
 
 ## Prerequisites
 - Access to the Azure portal.
@@ -12,11 +11,10 @@ This folder contains a Bicep template (`main.bicep`) and a sample parameters fil
 - An Azure Container Registry (ACR) exists and is accessible.
 
 ## Deploy using Azure portal
-1. Update `parameters.json` values to match your environment (resource group, ACR name, web app name, plan name, location).
+1. When deploying from the portal, choose “Build your own template in the editor”, upload `infra/main.bicep`, and set the parameters (web app name, plan name, location) directly in the portal UI.
 2. In the Azure portal, open the target resource group.
 3. Select `Deploy a custom template`.
-4. Choose `Build your own template in the editor`, then upload `infra/main.bicep`.
-5. Fill in the parameters (you can copy values from `infra/parameters.json`), then select `Review + create`.
+4. Choose `Build your own template in the editor`, upload `infra/main.bicep`, and supply the required parameter values before selecting `Review + create`.
 
 This will:
 - Create an App Service Plan (Linux)

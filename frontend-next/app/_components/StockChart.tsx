@@ -4,7 +4,13 @@ import { useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart,
-  registerables,
+  CategoryScale,
+  Legend,
+  LineController,
+  LineElement,
+  LinearScale,
+  PointElement,
+  Tooltip,
   type ChartOptions,
   type ChartData,
   type ChartDataset,
@@ -12,7 +18,7 @@ import {
 } from 'chart.js';
 import type { StockPoint, ApiError } from '../_lib/types';
 
-Chart.register(...registerables);
+Chart.register(LineController, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 function formatTimeLabel(iso: string) {
   const d = new Date(iso);
@@ -35,13 +41,17 @@ type StockChartProps = {
 function computeSMA(values: number[], window: number) {
   if (!values || values.length === 0) return [];
   if (window <= 1) return values.slice();
-  const result: number[] = [];
+  const result: number[] = new Array(values.length);
+  let rollingSum = 0;
+
   for (let i = 0; i < values.length; i++) {
-    const start = Math.max(0, i - window + 1);
-    const slice = values.slice(start, i + 1);
-    const avg = slice.reduce((s, v) => s + v, 0) / slice.length;
-    result.push(Math.round(avg * 100) / 100);
+    rollingSum += values[i];
+    if (i >= window) rollingSum -= values[i - window];
+    const divisor = i < window ? i + 1 : window;
+    const avg = rollingSum / divisor;
+    result[i] = Math.round(avg * 100) / 100;
   }
+
   return result;
 }
 

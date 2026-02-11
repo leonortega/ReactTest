@@ -1,9 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
+import { useCallback, useState, type ChangeEvent } from 'react';
 import useDebouncedValue from '../_hooks/useDebouncedValue';
 import { useStocks } from '../_hooks/useStocks';
-import type { StockData } from '../_lib/types';
 import StockChart from './StockChart';
 import StockControls from './StockControls';
 import ToggleOption from './ToggleOption';
@@ -11,21 +10,14 @@ import ToggleOption from './ToggleOption';
 type AppClientProps = {
   initialCompanyId?: string;
   initialDate?: string;
-  initialStockData?: StockData[];
-  initialLastFetchTime?: number | null;
 };
 
 export default function AppClient({
   initialCompanyId = 'ABC',
   initialDate = '2024-01-01',
-  initialStockData,
-  initialLastFetchTime,
 }: AppClientProps) {
-  const [companyId, setCompanyId] = useState(initialCompanyId);
-  const [date, setDate] = useState(initialDate);
-
-  const [tempCompanyId, setTempCompanyId] = useState(companyId);
-  const [tempDate, setTempDate] = useState(date);
+  const [tempCompanyId, setTempCompanyId] = useState(initialCompanyId);
+  const [tempDate, setTempDate] = useState(initialDate);
 
   const [showPoints, setShowPoints] = useState(false);
   const [showSMA, setShowSMA] = useState(true);
@@ -38,11 +30,6 @@ export default function AppClient({
   const debouncedCompanyId = useDebouncedValue(tempCompanyId, 600);
   const debouncedDate = useDebouncedValue(tempDate, 600);
 
-  useEffect(() => {
-    setCompanyId((prev: string) => (prev !== debouncedCompanyId ? debouncedCompanyId : prev));
-    setDate((prev: string) => (prev !== debouncedDate ? debouncedDate : prev));
-  }, [debouncedCompanyId, debouncedDate]);
-
   const {
     stockData = [],
     status,
@@ -50,18 +37,7 @@ export default function AppClient({
     refetch,
     isFetching,
     lastFetchTime,
-  } = useStocks(companyId, date, {
-    initialData: initialStockData,
-    initialLastFetchTime,
-  });
-
-  const [localLastFetchTime, setLocalLastFetchTime] = useState<Date | null>(null);
-
-  useEffect(() => {
-    if (!isFetching && status === 'success') {
-      setLocalLastFetchTime(new Date());
-    }
-  }, [isFetching, status, stockData]);
+  } = useStocks(debouncedCompanyId, debouncedDate);
 
   const loading = status === 'loading' || isFetching;
 
@@ -122,13 +98,13 @@ export default function AppClient({
           onTempCompanyIdChange={handleTempCompanyIdChange}
           onTempDateChange={handleTempDateChange}
           onSubmit={handleSubmit}
-          enabled={Boolean(companyId && date)}
+          enabled={Boolean(tempCompanyId && tempDate)}
           loading={loading}
         />
 
         <div className="last-fetch">
-          {localLastFetchTime || lastFetchTime
-            ? `Last API call: ${new Date(localLastFetchTime ?? lastFetchTime!).toLocaleString()}`
+          {lastFetchTime
+            ? `Last API call: ${new Date(lastFetchTime).toLocaleString()}`
             : 'No API calls yet'}
         </div>
 

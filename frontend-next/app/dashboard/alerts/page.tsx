@@ -3,10 +3,10 @@ import { readStore } from '../../_lib/storage';
 import type { Alert, Notification } from '../../_lib/types';
 
 export default async function AlertsPage() {
-  const alertsStore = await readStore<{ items: Alert[] }>('alerts.json', { items: [] });
-  const notificationsStore = await readStore<{ items: Notification[] }>('notifications.json', {
-    items: [],
-  });
+  const [alertsStore, notificationsStore] = await Promise.all([
+    readStore<{ items: Alert[] }>('alerts.json', { items: [] }),
+    readStore<{ items: Notification[] }>('notifications.json', { items: [] }),
+  ]);
 
   return (
     <div className="grid gap-6">

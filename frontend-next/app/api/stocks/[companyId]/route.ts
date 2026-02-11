@@ -1,15 +1,37 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import type { StockData } from '../../../_lib/types';
 
-const defaultBaseUrl = 'http://localhost:8080/api';
 // Do not cache responses for polling clients
 const cacheHeader = 'no-store';
 const rateLimit = new Map<string, { count: number; resetAt: number }>();
 const maxRequestsPerWindow = 60;
 const windowMs = 60_000;
+const maxRateLimitEntries = 10_000;
+let lastRateLimitSweepAt = 0;
+
+function sweepRateLimit(now: number) {
+  if (now - lastRateLimitSweepAt < windowMs) return;
+  lastRateLimitSweepAt = now;
+
+  for (const [key, entry] of rateLimit.entries()) {
+    if (entry.resetAt <= now) rateLimit.delete(key);
+  }
+
+  if (rateLimit.size <= maxRateLimitEntries) return;
+
+  const overflow = rateLimit.size - maxRateLimitEntries;
+  const oldest = [...rateLimit.entries()]
+    .sort((a, b) => a[1].resetAt - b[1].resetAt)
+    .slice(0, overflow);
+
+  for (const [key] of oldest) {
+    rateLimit.delete(key);
+  }
+}
 
 function checkRateLimit(key: string) {
   const now = Date.now();
+  sweepRateLimit(now);
   const existing = rateLimit.get(key);
 
   if (!existing || existing.resetAt < now) {
@@ -38,7 +60,7 @@ export async function GET(
     return NextResponse.json({ error: 'companyId and date are required' }, { status: 400 });
   }
 
-  const ip = request.headers.get('x-forwarded-for') ?? 'local';
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
   const rateKey = `${ip}|${companyId}|${date}`;
 
   if (ip !== 'local' && !checkRateLimit(rateKey)) {
@@ -48,12 +70,15 @@ export async function GET(
     );
   }
 
-  const configuredBaseUrl = process.env.INTERNAL_API_BASE_URL ?? '';
-  const baseUrl = (configuredBaseUrl.startsWith('http') ? configuredBaseUrl : defaultBaseUrl).replace(
-    /\/$/,
-    '',
-  );
-  const apiUrl = `${baseUrl}/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(date)}`;
+  const baseUrl = process.env.INTERNAL_API_BASE_URL;
+
+  if (!baseUrl) {
+    return NextResponse.json({ error: 'INTERNAL_API_BASE_URL is not configured' }, { status: 500 });
+  }
+
+  const apiUrl = `${baseUrl.replace(/\/$/, '')}/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(
+    date,
+  )}`;
 
   try {
     const response = await fetch(apiUrl, { cache: 'no-store' });
