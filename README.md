@@ -7,7 +7,7 @@ Projects
 - `backend/StocksApi` - .NET 10 Web API that implements a vertical-slice style with MediatR. It exposes a stocks endpoint:
   - `GET /api/stocks/{companyId}?date={YYYY-MM-DD}` � returns an array of stock points for the requested company and date.
 
-- `frontend-next` - Next.js application that visualizes stock data. The app reads `NEXT_PUBLIC_API_BASE_URL` to determine the backend base URL at runtime/build time.
+- `frontend-next` - Next.js application that visualizes stock data. The server-side API proxy reads `INTERNAL_API_BASE_URL` to reach the backend Stocks API.
   - Dashboard entities (watchlists/alerts/preferences) are persisted as JSON files for this POC and are intended for single-instance use.
 
 Why frontend-next replace frontend?

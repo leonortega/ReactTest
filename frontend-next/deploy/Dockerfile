@@ -20,6 +20,8 @@ RUN npm run build
 FROM node:20-alpine
 
 ENV NODE_ENV=production
+ARG INTERNAL_API_BASE_URL
+ENV INTERNAL_API_BASE_URL=$INTERNAL_API_BASE_URL
 WORKDIR /app
 
 RUN apk add --no-cache wget
