@@ -21,9 +21,19 @@ import Card, { CardTitle } from './ui/Card';
 
 Chart.register(LineController, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend);
 
-function formatTimeLabel(iso: string) {
-  const d = new Date(iso);
-  return d.toISOString().slice(11, 16);
+function formatTimeLabel(date: Date) {
+  return date.toISOString().slice(11, 16);
+}
+
+function parsePoint(dateTime: string, price: number) {
+  const parsedDate = new Date(dateTime);
+  const parsedPrice = Number(price);
+
+  if (!Number.isFinite(parsedDate.getTime()) || !Number.isFinite(parsedPrice)) {
+    return null;
+  }
+
+  return { t: parsedDate, price: parsedPrice };
 }
 
 type StockChartProps = {
@@ -172,29 +182,32 @@ function computeEMA(values: number[], window: number) {
 function computeRSI(values: number[], window: number) {
   if (!values || values.length === 0) return [];
   if (window <= 1) return values.map(() => 50);
-  const result: number[] = [];
-  let avgGain = 0;
-  let avgLoss = 0;
+  const result: number[] = new Array(values.length).fill(50);
+  if (values.length <= window) return result;
 
-  for (let i = 1; i < values.length; i++) {
+  let gainSum = 0;
+  let lossSum = 0;
+  for (let i = 1; i <= window; i++) {
     const diff = values[i] - values[i - 1];
-    const gain = Math.max(diff, 0);
-    const loss = Math.abs(Math.min(diff, 0));
-
-    if (i <= window) {
-      avgGain += gain;
-      avgLoss += loss;
-      result.push(50);
-    } else {
-      avgGain = (avgGain * (window - 1) + gain) / window;
-      avgLoss = (avgLoss * (window - 1) + loss) / window;
-      const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
-      const rsi = 100 - 100 / (1 + rs);
-      result.push(Math.round(rsi * 100) / 100);
-    }
+    gainSum += Math.max(diff, 0);
+    lossSum += Math.max(-diff, 0);
   }
 
-  return [50, ...result].slice(0, values.length);
+  let avgGain = gainSum / window;
+  let avgLoss = lossSum / window;
+
+  for (let i = window + 1; i < values.length; i++) {
+    const diff = values[i] - values[i - 1];
+    const gain = Math.max(diff, 0);
+    const loss = Math.max(-diff, 0);
+    avgGain = (avgGain * (window - 1) + gain) / window;
+    avgLoss = (avgLoss * (window - 1) + loss) / window;
+    const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+    const rsi = 100 - 100 / (1 + rs);
+    result[i] = Math.round(rsi * 100) / 100;
+  }
+
+  return result;
 }
 
 export default function StockChart({
@@ -232,10 +245,13 @@ export default function StockChart({
   const chartData = useMemo(() => {
     if (!stockData || stockData.length === 0) return null;
     const points = stockData
-      .map((p) => ({ t: new Date(p.dateTime), price: Number(p.price) }))
+      .map((p) => parsePoint(p.dateTime, p.price))
+      .filter((point): point is { t: Date; price: number } => point !== null)
       .sort((a, b) => a.t.getTime() - b.t.getTime());
 
-    const labels = points.map((p) => formatTimeLabel(p.t.toISOString()));
+    if (points.length === 0) return null;
+
+    const labels = points.map((p) => formatTimeLabel(p.t));
     const prices = points.map((p) => Number(p.price));
     const sma = computeSMA(prices, smaWindow);
     const ema = computeEMA(prices, emaWindow);

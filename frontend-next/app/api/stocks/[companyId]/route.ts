@@ -1,60 +1,69 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import type { StockData } from '../../../_lib/types';
-import { updateStore } from '../../../_lib/storage';
+import { parseCompanyId, parseIsoDate } from '../../../_lib/requestValidation';
 
 // Do not cache responses for polling clients
 const cacheHeader = 'no-store';
 const maxRequestsPerWindow = 60;
 const windowMs = 60_000;
 const maxRateLimitEntries = 10_000;
-const rateLimitFile = 'rate-limit.json';
 
 type RateLimitEntry = { count: number; resetAt: number };
-type RateLimitStore = { entries: Record<string, RateLimitEntry> };
+const rateLimitEntries = new Map<string, RateLimitEntry>();
 
-async function checkRateLimit(key: string): Promise<{ allowed: boolean; retryAfterSeconds: number }> {
+function getRateLimitKey(request: NextRequest): string {
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  const forwardedIp = forwardedFor?.split(',')[0]?.trim();
+  const realIp = request.headers.get('x-real-ip')?.trim();
+  const clientIp = forwardedIp || realIp || 'anonymous';
+  const userAgent = (request.headers.get('user-agent') ?? 'unknown').trim().slice(0, 80);
+  return `${clientIp}|${userAgent}`;
+}
+
+function checkRateLimit(key: string): { allowed: boolean; retryAfterSeconds: number } {
   const now = Date.now();
-  let allowed = true;
-  let retryAfterSeconds = 0;
+  for (const [entryKey, entry] of rateLimitEntries.entries()) {
+    if (entry.resetAt <= now) {
+      rateLimitEntries.delete(entryKey);
+    }
+  }
 
-  await updateStore<RateLimitStore>(
-    rateLimitFile,
-    { entries: {} },
-    (store) => {
-      const nextEntries = { ...store.entries };
+  const existing = rateLimitEntries.get(key);
+  if (!existing || existing.resetAt <= now) {
+    rateLimitEntries.set(key, { count: 1, resetAt: now + windowMs });
+  } else if (existing.count >= maxRequestsPerWindow) {
+    const retryAfterSeconds = Math.max(1, Math.ceil((existing.resetAt - now) / 1000));
+    return { allowed: false, retryAfterSeconds };
+  } else {
+    rateLimitEntries.set(key, { ...existing, count: existing.count + 1 });
+  }
 
-      for (const [entryKey, entry] of Object.entries(nextEntries)) {
-        if (entry.resetAt <= now) {
-          delete nextEntries[entryKey];
-        }
-      }
+  if (rateLimitEntries.size > maxRateLimitEntries) {
+    const overflow = rateLimitEntries.size - maxRateLimitEntries;
+    const oldestKeys = [...rateLimitEntries.entries()]
+      .sort((a, b) => a[1].resetAt - b[1].resetAt)
+      .slice(0, overflow)
+      .map(([entryKey]) => entryKey);
+    for (const oldKey of oldestKeys) {
+      rateLimitEntries.delete(oldKey);
+    }
+  }
 
-      const existing = nextEntries[key];
-      if (!existing || existing.resetAt <= now) {
-        nextEntries[key] = { count: 1, resetAt: now + windowMs };
-      } else if (existing.count >= maxRequestsPerWindow) {
-        allowed = false;
-        retryAfterSeconds = Math.max(1, Math.ceil((existing.resetAt - now) / 1000));
-      } else {
-        nextEntries[key] = { ...existing, count: existing.count + 1 };
-      }
+  return { allowed: true, retryAfterSeconds: 0 };
+}
 
-      const keys = Object.keys(nextEntries);
-      if (keys.length > maxRateLimitEntries) {
-        const overflow = keys.length - maxRateLimitEntries;
-        const oldestKeys = keys
-          .sort((a, b) => nextEntries[a].resetAt - nextEntries[b].resetAt)
-          .slice(0, overflow);
-        for (const oldKey of oldestKeys) {
-          delete nextEntries[oldKey];
-        }
-      }
+function getInternalApiBaseUrl(): string | null {
+  const configuredValue = process.env.INTERNAL_API_BASE_URL;
+  if (!configuredValue) {
+    return null;
+  }
 
-      return { entries: nextEntries };
-    },
-  );
+  const normalized = configuredValue.trim().replace(/^['"]|['"]$/g, '');
+  return normalized || null;
+}
 
-  return { allowed, retryAfterSeconds };
+export function __resetRateLimitForTests() {
+  rateLimitEntries.clear();
 }
 
 export async function GET(
@@ -63,37 +72,38 @@ export async function GET(
 ) {
   const { searchParams } = new URL(request.url);
   const resolvedParams = await params;
-  const companyId = resolvedParams.companyId ? decodeURIComponent(resolvedParams.companyId) : null;
-  const date = searchParams.get('date');
+  const companyId = parseCompanyId(resolvedParams.companyId);
+  const date = parseIsoDate(searchParams.get('date'));
 
   if (!companyId || !date) {
-    return NextResponse.json({ error: 'companyId and date are required' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'companyId and date are required' },
+      { status: 400, headers: { 'Cache-Control': cacheHeader } },
+    );
   }
 
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
-  // Rate-limit by caller identity to prevent bypass through query variation.
-  const rateKey = ip;
-
-  if (ip !== 'local') {
-    const { allowed, retryAfterSeconds } = await checkRateLimit(rateKey);
-    if (!allowed) {
-      return NextResponse.json(
-        { error: 'Rate limit exceeded' },
-        {
-          status: 429,
-          headers: {
-            'Cache-Control': cacheHeader,
-            'Retry-After': String(retryAfterSeconds),
-          },
+  // Enforce rate limiting for every request to prevent unauthenticated bypasses.
+  const { allowed, retryAfterSeconds } = checkRateLimit(getRateLimitKey(request));
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded' },
+      {
+        status: 429,
+        headers: {
+          'Cache-Control': cacheHeader,
+          'Retry-After': String(retryAfterSeconds),
         },
-      );
-    }
+      },
+    );
   }
 
-  const baseUrl = process.env.INTERNAL_API_BASE_URL;
+  const baseUrl = getInternalApiBaseUrl();
 
   if (!baseUrl) {
-    return NextResponse.json({ error: 'INTERNAL_API_BASE_URL is not configured' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'INTERNAL_API_BASE_URL is not configured' },
+      { status: 500, headers: { 'Cache-Control': cacheHeader } },
+    );
   }
 
   const apiUrl = `${baseUrl.replace(/\/$/, '')}/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(
@@ -119,9 +129,10 @@ export async function GET(
 
     return NextResponse.json(data, { status: 200, headers: { 'Cache-Control': cacheHeader } });
   } catch (error) {
+    console.error('Failed to fetch stocks from upstream API', { companyId, date, error });
     return NextResponse.json(
-      { error: String(error) },
-      { status: 500, headers: { 'Cache-Control': cacheHeader } },
+      { error: 'Unable to reach Stocks API configured by INTERNAL_API_BASE_URL' },
+      { status: 502, headers: { 'Cache-Control': cacheHeader } },
     );
   }
 }

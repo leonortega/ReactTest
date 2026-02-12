@@ -1,12 +1,27 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import useSWR from 'swr';
 import type { StockData } from '../_lib/types';
 
-async function fetchJson<T>(url: string, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(url, signal ? { signal } : undefined);
-  if (!response.ok) throw new Error('Failed to fetch');
+type ErrorPayload = {
+  error?: string;
+};
+
+async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url, { cache: 'no-store' });
+  if (!response.ok) {
+    let message = 'Failed to fetch';
+    try {
+      const payload = (await response.json()) as ErrorPayload;
+      if (typeof payload?.error === 'string' && payload.error.trim()) {
+        message = payload.error;
+      }
+    } catch {
+      // ignore parse errors and keep generic message
+    }
+    throw new Error(message);
+  }
   return (await response.json()) as T;
 }
 
@@ -29,31 +44,14 @@ export function useStocks(
     companyId && date
       ? `/api/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(date)}`
       : null;
-  const controllersRef = useRef<Record<string, AbortController | null>>({});
 
-  const fetcher = async (url: string) => {
-    try {
-      controllersRef.current[url]?.abort();
-    } catch {
-      /* ignore */
-    }
-    const controller = new AbortController();
-    controllersRef.current[url] = controller;
-
-    try {
-      return await fetchJson<StockData[]>(url, controller.signal);
-    } finally {
-      if (controllersRef.current[url] === controller) controllersRef.current[url] = null;
-    }
-  };
-
-  const { data, error, isValidating, mutate } = useSWR<StockData[]>(key, fetcher, {
+  const { data, error, isValidating, mutate } = useSWR<StockData[]>(key, fetchJson, {
     revalidateOnFocus: false,
     revalidateIfStale: false,
     refreshInterval: key ? 5000 : 0,
     refreshWhenHidden: false,
     refreshWhenOffline: false,
-    dedupingInterval: 0,
+    dedupingInterval: 1000,
     onSuccess: () => {
       setLastFetchTime(Date.now());
     },
@@ -64,7 +62,7 @@ export function useStocks(
   return {
     stockData: data ?? [],
     status,
-    error: error ? String(error.message) : null,
+    error: error instanceof Error ? error.message : error ? String(error) : null,
     refetch: () => {
       void mutate();
     },

@@ -12,6 +12,15 @@ type AppClientProps = {
   initialDate?: string;
 };
 
+function formatUtcDateTime(value: string): string {
+  const parsed = new Date(value);
+  if (!Number.isFinite(parsed.getTime())) {
+    return value;
+  }
+
+  return parsed.toISOString();
+}
+
 export default function AppClient({
   initialCompanyId = 'ABC',
   initialDate = '2024-01-01',
@@ -93,10 +102,10 @@ export default function AppClient({
 
   return (
     <div className="px-6 py-8 text-text">
-      <a className="sr-only focus:not-sr-only" href="#main">
+      <a className="sr-only focus:not-sr-only" href="#analytics-content">
         Skip to content
       </a>
-      <main id="main" role="main" className="mx-auto grid max-w-[980px] gap-4">
+      <section id="analytics-content" className="mx-auto grid max-w-[980px] gap-4">
         <header className="grid gap-1">
           <h1 className="text-2xl font-semibold tracking-tight text-text">MarketPulse Analytics</h1>
           <p className="site-subtitle">Live stock visualization</p>
@@ -207,10 +216,13 @@ export default function AppClient({
                   </tr>
                 </thead>
                 <tbody>
-                  {stockData.map((s) => {
-                    const iso = new Date(s.dateTime).toISOString();
+                  {stockData.map((s, index) => {
+                    const iso = formatUtcDateTime(s.dateTime);
                     return (
-                      <tr key={s.dateTime} className="border-b border-border/60 odd:bg-surface even:bg-surface-2">
+                      <tr
+                        key={`${s.dateTime}-${index}`}
+                        className="border-b border-border/60 odd:bg-surface even:bg-surface-2"
+                      >
                         <td className="p-2 align-top text-data">{iso}</td>
                         <td className="p-2 text-right align-top text-data">
                           {Math.round(Number(s.price) * 100) / 100}
@@ -229,7 +241,7 @@ export default function AppClient({
         <footer className="text-sm text-text-muted">
           This page calls the backend Stocks API at <code>/api/stocks</code>.
         </footer>
-      </main>
+      </section>
     </div>
   );
 }

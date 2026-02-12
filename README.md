@@ -8,6 +8,7 @@ Projects
   - `GET /api/stocks/{companyId}?date={YYYY-MM-DD}` � returns an array of stock points for the requested company and date.
 
 - `frontend-next` - Next.js application that visualizes stock data. The app reads `NEXT_PUBLIC_API_BASE_URL` to determine the backend base URL at runtime/build time.
+  - Dashboard entities (watchlists/alerts/preferences) are persisted as JSON files for this POC and are intended for single-instance use.
 
 Why frontend-next replace frontend?
 
@@ -37,6 +38,10 @@ npm run dev
 ```
 
 - The client uses the Next API proxy (`/api/stocks/...`) so you do not normally need to set a public API base URL for the browser bundle. The server-side proxy uses the `INTERNAL_API_BASE_URL` environment variable to reach the backend API (for example when running in Docker or Azure).
+  - For local `npm run dev` from `frontend-next`, create `frontend-next/.env.local` with:
+    - `INTERNAL_API_BASE_URL=http://localhost:60480/api`
+  - For Docker Compose, keep root `.env` with:
+    - `INTERNAL_API_BASE_URL=http://stocksapi/api`
 
 Environment
 

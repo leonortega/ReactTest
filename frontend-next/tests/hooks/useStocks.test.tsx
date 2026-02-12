@@ -43,4 +43,19 @@ describe('useStocks', () => {
     expect(url).toContain('/api/stocks/ABC?date=2024-01-01');
     expect(result.current.status).toBe('success');
   });
+
+  it('surfaces API error message', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: 'Rate limit exceeded' }),
+    }) as unknown as typeof fetch;
+
+    const { result } = renderHook(() => useStocks('ABC', '2024-01-01'), { wrapper: swrWrapper });
+
+    await waitFor(() => {
+      expect(result.current.status).toBe('error');
+    });
+
+    expect(result.current.error).toBe('Rate limit exceeded');
+  });
 });

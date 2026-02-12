@@ -1,6 +1,8 @@
 import { promises as fs } from 'fs';
 import { join } from 'path';
 
+// POC storage: file-backed state is safe for a single Node.js instance.
+// For multi-instance deployments, replace this module with shared storage.
 const fileLocks = new Map<string, Promise<void>>();
 
 function getDataDir() {

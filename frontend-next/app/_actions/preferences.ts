@@ -20,11 +20,15 @@ function parseCurrency(value: FormDataEntryValue | null): Preferences['currency'
   return value === 'EUR' || value === 'GBP' ? value : 'USD';
 }
 
+function parseCheckbox(value: FormDataEntryValue | null): boolean {
+  return value === 'on' || value === 'true' || value === '1';
+}
+
 export async function updatePreferences(formData: FormData) {
   const theme = parseTheme(formData.get('theme'));
   const currency = parseCurrency(formData.get('currency'));
-  const email = Boolean(formData.get('email'));
-  const inApp = Boolean(formData.get('inApp'));
+  const email = parseCheckbox(formData.get('email'));
+  const inApp = parseCheckbox(formData.get('inApp'));
 
   await updateStore<Preferences>(storeFile, fallback, (store) => ({
     ...store,

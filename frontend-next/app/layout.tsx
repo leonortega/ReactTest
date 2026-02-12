@@ -2,7 +2,6 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { IBM_Plex_Mono, Manrope } from 'next/font/google';
 import SiteHeader from './_components/SiteHeader';
-import SWRProviderClient from './_components/SWRProviderClient';
 import { readStore } from './_lib/storage';
 import type { Preferences } from './_lib/types';
 
@@ -42,10 +41,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body
         className={`${manrope.className} ${manrope.variable} ${ibmPlexMono.variable} min-h-screen bg-bg text-text antialiased`}
       >
-        <SWRProviderClient>
-          <SiteHeader theme={theme} />
-          {children}
-        </SWRProviderClient>
+        <SiteHeader theme={theme} />
+        {children}
       </body>
     </html>
   );

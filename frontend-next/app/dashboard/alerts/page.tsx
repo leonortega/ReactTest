@@ -5,7 +5,24 @@ import Button from '../../_components/ui/Button';
 import Card, { CardTitle } from '../../_components/ui/Card';
 import { Field, FieldInput, FieldSelect } from '../../_components/ui/Field';
 
-export default async function AlertsPage() {
+type AlertsSearchParams = {
+  error?: string;
+};
+
+function getErrorMessage(errorCode?: string): string | null {
+  if (errorCode === 'invalid-input') {
+    return 'Please provide a valid symbol and threshold.';
+  }
+  return null;
+}
+
+export default async function AlertsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<AlertsSearchParams>;
+} = {}) {
+  const resolvedSearchParams = await searchParams;
+  const errorMessage = getErrorMessage(resolvedSearchParams?.error);
   const [alertsStore, notificationsStore] = await Promise.all([
     readStore<{ items: Alert[] }>('alerts.json', { items: [] }),
     readStore<{ items: Notification[] }>('notifications.json', { items: [] }),
@@ -13,11 +30,26 @@ export default async function AlertsPage() {
 
   return (
     <div className="grid gap-6">
+      {errorMessage && (
+        <Card variant="panel" className="border-danger/40 bg-danger/10">
+          <p role="alert" className="text-sm text-danger">
+            {errorMessage}
+          </p>
+        </Card>
+      )}
+
       <Card variant="form">
         <CardTitle>Create alert</CardTitle>
         <form action={createAlert} className="mt-4 grid gap-3 md:grid-cols-4">
           <Field label="Symbol" htmlFor="alert-symbol" required>
-            <FieldInput id="alert-symbol" name="symbol" placeholder="Symbol" required />
+            <FieldInput
+              id="alert-symbol"
+              name="symbol"
+              placeholder="Symbol"
+              required
+              pattern="[A-Za-z0-9.-]{1,15}"
+              title="1-15 letters, numbers, dot, or dash."
+            />
           </Field>
           <Field label="Threshold" htmlFor="alert-threshold" required>
             <FieldInput
@@ -25,6 +57,7 @@ export default async function AlertsPage() {
               name="threshold"
               type="number"
               step="0.01"
+              min="0.01"
               placeholder="Threshold"
               required
             />

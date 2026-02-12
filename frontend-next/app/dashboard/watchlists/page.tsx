@@ -5,11 +5,36 @@ import Button from '../../_components/ui/Button';
 import Card, { CardTitle } from '../../_components/ui/Card';
 import { Field, FieldInput } from '../../_components/ui/Field';
 
-export default async function WatchlistsPage() {
+type WatchlistsSearchParams = {
+  error?: string;
+};
+
+function getErrorMessage(errorCode?: string): string | null {
+  if (errorCode === 'invalid-input') {
+    return 'Please provide a watchlist name and valid symbols.';
+  }
+  return null;
+}
+
+export default async function WatchlistsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<WatchlistsSearchParams>;
+} = {}) {
+  const resolvedSearchParams = await searchParams;
+  const errorMessage = getErrorMessage(resolvedSearchParams?.error);
   const store = await readStore<{ items: Watchlist[] }>('watchlists.json', { items: [] });
 
   return (
     <div className="grid gap-6">
+      {errorMessage && (
+        <Card variant="panel" className="border-danger/40 bg-danger/10">
+          <p role="alert" className="text-sm text-danger">
+            {errorMessage}
+          </p>
+        </Card>
+      )}
+
       <Card variant="form">
         <CardTitle>Create watchlist</CardTitle>
         <form action={createWatchlist} className="mt-4 grid gap-3 md:grid-cols-3">
@@ -26,6 +51,8 @@ export default async function WatchlistsPage() {
               id="watchlist-symbols"
               name="symbols"
               placeholder="Symbols (comma separated)"
+              pattern="[A-Za-z0-9.,\\-\\s]*"
+              title="Use comma-separated symbols with letters, numbers, dot, and dash."
             />
           </Field>
           <Button className="md:col-span-3" type="submit">

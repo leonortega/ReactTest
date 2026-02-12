@@ -5,9 +5,6 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-ARG INTERNAL_API_BASE_URL
-ENV INTERNAL_API_BASE_URL=$INTERNAL_API_BASE_URL
-
 COPY package*.json ./
 ENV HUSKY=0
 RUN npm ci --ignore-scripts
@@ -21,9 +18,6 @@ RUN npm run build
 # Runtime stage
 # =========================
 FROM node:20-alpine
-
-ARG INTERNAL_API_BASE_URL
-ENV INTERNAL_API_BASE_URL=$INTERNAL_API_BASE_URL
 
 ENV NODE_ENV=production
 WORKDIR /app

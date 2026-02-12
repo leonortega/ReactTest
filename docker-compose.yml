@@ -30,8 +30,8 @@ services:
     build:
       context: ./frontend-next
       dockerfile: deploy/Dockerfile
-      args:
-        - INTERNAL_API_BASE_URL=${INTERNAL_API_BASE_URL}
+    environment:
+      - INTERNAL_API_BASE_URL=${INTERNAL_API_BASE_URL}
     ports:
       - "3000:3000"
     depends_on:

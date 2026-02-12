@@ -1,0 +1,7 @@
+.env.local
+.env.development.local
+.env.production.local
+.env.test.local
+node_modules
+.next
+Trace-*.json
