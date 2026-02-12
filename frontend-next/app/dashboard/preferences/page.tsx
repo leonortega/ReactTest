@@ -1,35 +1,36 @@
 import { updatePreferences } from '../../_actions/preferences';
 import { readStore } from '../../_lib/storage';
 import type { Preferences } from '../../_lib/types';
+import Button from '../../_components/ui/Button';
+import Card, { CardTitle } from '../../_components/ui/Card';
+import { Field, FieldSelect } from '../../_components/ui/Field';
 
 export default async function PreferencesPage() {
   const preferences = await readStore<Preferences>('preferences.json', {
-    theme: 'system',
+    theme: 'light',
     currency: 'USD',
     notifications: { email: true, inApp: true },
   });
+  const theme = preferences.theme === 'dark' ? 'dark' : 'light';
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold">Preferences</h2>
+    <Card variant="form">
+      <CardTitle>Preferences</CardTitle>
       <form action={updatePreferences} className="mt-4 grid gap-4 md:grid-cols-2">
-        <label className="control-label">
-          Theme
-          <select name="theme" defaultValue={preferences.theme} className="input-base">
-            <option value="system">System</option>
+        <Field label="Theme" htmlFor="preferences-theme">
+          <FieldSelect id="preferences-theme" name="theme" defaultValue={theme}>
             <option value="light">Light</option>
             <option value="dark">Dark</option>
-          </select>
-        </label>
-        <label className="control-label">
-          Currency
-          <select name="currency" defaultValue={preferences.currency} className="input-base">
+          </FieldSelect>
+        </Field>
+        <Field label="Currency" htmlFor="preferences-currency">
+          <FieldSelect id="preferences-currency" name="currency" defaultValue={preferences.currency}>
             <option value="USD">USD</option>
             <option value="EUR">EUR</option>
             <option value="GBP">GBP</option>
-          </select>
-        </label>
-        <label className="control-label">
+          </FieldSelect>
+        </Field>
+        <label className="inline-flex items-center gap-2 text-sm text-text">
           <input
             type="checkbox"
             name="email"
@@ -38,7 +39,7 @@ export default async function PreferencesPage() {
           />
           Email notifications
         </label>
-        <label className="control-label">
+        <label className="inline-flex items-center gap-2 text-sm text-text">
           <input
             type="checkbox"
             name="inApp"
@@ -47,10 +48,10 @@ export default async function PreferencesPage() {
           />
           In-app notifications
         </label>
-        <button className="btn-primary md:col-span-2" type="submit">
+        <Button className="md:col-span-2" type="submit">
           Save preferences
-        </button>
+        </Button>
       </form>
-    </section>
+    </Card>
   );
 }

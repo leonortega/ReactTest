@@ -1,12 +1,23 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { IBM_Plex_Mono, Manrope } from 'next/font/google';
 import SiteHeader from './_components/SiteHeader';
 import SWRProviderClient from './_components/SWRProviderClient';
 import { readStore } from './_lib/storage';
 import type { Preferences } from './_lib/types';
 
-const inter = Inter({ subsets: ['latin'], display: 'swap' });
+const manrope = Manrope({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-manrope',
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  display: 'swap',
+  variable: '--font-plex-mono',
+});
 
 export const metadata: Metadata = {
   title: 'MarketPulse',
@@ -20,17 +31,19 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const preferences = await readStore<Preferences>('preferences.json', {
-    theme: 'system',
+    theme: 'light',
     currency: 'USD',
     notifications: { email: true, inApp: true },
   });
-  const themeAttribute = preferences.theme === 'dark' ? 'dark' : undefined;
+  const theme = preferences.theme === 'dark' ? 'dark' : 'light';
 
   return (
-    <html lang="en" data-theme={themeAttribute}>
-      <body className={`${inter.className} min-h-screen bg-slate-50 text-slate-900 antialiased`}>
+    <html lang="en" data-theme={theme}>
+      <body
+        className={`${manrope.className} ${manrope.variable} ${ibmPlexMono.variable} min-h-screen bg-bg text-text antialiased`}
+      >
         <SWRProviderClient>
-          <SiteHeader theme={preferences.theme} />
+          <SiteHeader theme={theme} />
           {children}
         </SWRProviderClient>
       </body>

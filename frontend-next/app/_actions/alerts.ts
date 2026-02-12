@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createId } from '../_lib/ids';
-import { readStore, writeStore } from '../_lib/storage';
+import { updateStore } from '../_lib/storage';
 import type { Alert, AlertJob, Notification } from '../_lib/types';
 
 const alertsFile = 'alerts.json';
@@ -21,7 +21,6 @@ export async function createAlert(formData: FormData) {
     return;
   }
 
-  const alertsStore = await readStore<{ items: Alert[] }>(alertsFile, { items: [] });
   const alert: Alert = {
     id: createId(),
     symbol,
@@ -32,14 +31,13 @@ export async function createAlert(formData: FormData) {
     createdAt: new Date().toISOString(),
   };
 
-  alertsStore.items.unshift(alert);
-  await writeStore(alertsFile, alertsStore);
+  await updateStore<{ items: Alert[] }>(alertsFile, { items: [] }, (store) => ({
+    ...store,
+    items: [alert, ...store.items],
+  }));
 
-  const notificationsStore = await readStore<{ items: Notification[] }>(notificationsFile, {
-    items: [],
-  });
   const message = `Alert set for ${symbol} ${direction} ${threshold}.`;
-  notificationsStore.items.unshift(
+  const notifications: Notification[] = [
     {
       id: createId(),
       alertId: alert.id,
@@ -56,17 +54,24 @@ export async function createAlert(formData: FormData) {
       createdAt: new Date().toISOString(),
       read: false,
     },
-  );
-  await writeStore(notificationsFile, notificationsStore);
+  ];
 
-  const jobsStore = await readStore<{ items: AlertJob[] }>(jobsFile, { items: [] });
-  jobsStore.items.unshift({
+  await updateStore<{ items: Notification[] }>(notificationsFile, { items: [] }, (store) => ({
+    ...store,
+    items: [...notifications, ...store.items],
+  }));
+
+  const job: AlertJob = {
     id: createId(),
     alertId: alert.id,
     runAt: new Date(Date.now() + 60_000).toISOString(),
     status: 'queued',
-  });
-  await writeStore(jobsFile, jobsStore);
+  };
+
+  await updateStore<{ items: AlertJob[] }>(jobsFile, { items: [] }, (store) => ({
+    ...store,
+    items: [job, ...store.items],
+  }));
 
   revalidatePath('/dashboard/alerts');
   revalidatePath('/dashboard/alerts/history');

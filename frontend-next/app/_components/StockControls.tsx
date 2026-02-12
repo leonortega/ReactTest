@@ -1,7 +1,10 @@
 'use client';
 
-import { memo, useCallback } from 'react';
+import { CalendarDaysIcon } from '@heroicons/react/24/outline';
+import { memo, useCallback, useRef } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
+import Button from './ui/Button';
+import { Field, FieldInput } from './ui/Field';
 
 export interface StockControlsProps {
   tempCompanyId: string;
@@ -22,6 +25,8 @@ function StockControls({
   enabled,
   loading,
 }: StockControlsProps) {
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
   const handleSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -44,48 +49,61 @@ function StockControls({
     [onTempDateChange],
   );
 
+  const handleOpenDatePicker = useCallback(() => {
+    const input = dateInputRef.current;
+    if (!input) return;
+
+    input.focus();
+    try {
+      input.showPicker();
+      return;
+    } catch {
+      input.click();
+    }
+  }, []);
+
   return (
     <form
-      className="mb-3 flex flex-wrap items-end gap-3"
+      className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
       onSubmit={handleSubmit}
       aria-label="Stock query form"
     >
-      <div>
-        <label className="control-label mb-1 block" htmlFor="company-input">
-          Company ID
-        </label>
-        <input
+      <Field label="Company ID" htmlFor="company-input">
+        <FieldInput
           id="company-input"
           aria-label="Company ID"
           value={tempCompanyId || ''}
           onChange={handleCompanyChange}
-          className="input-base"
+          className="h-10"
         />
-      </div>
+      </Field>
 
-      <div>
-        <label className="control-label mb-1 block" htmlFor="date-input">
-          Date
-        </label>
-        <input
-          id="date-input"
-          aria-label="Date"
-          type="date"
-          value={tempDate || ''}
-          onChange={handleDateChange}
-          className="input-base"
-        />
-      </div>
+      <Field label="Date" htmlFor="date-input">
+        <div className="relative">
+          <FieldInput
+            id="date-input"
+            ref={dateInputRef}
+            aria-label="Date"
+            type="date"
+            value={tempDate || ''}
+            onChange={handleDateChange}
+            className="date-native-hidden h-10 pr-10"
+          />
+          <button
+            type="button"
+            aria-label="Open calendar"
+            onClick={handleOpenDatePicker}
+            className="absolute right-2 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded text-text-muted transition-colors duration-fast hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+          >
+            <CalendarDaysIcon className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+      </Field>
 
-      <div>
-        <button
-          className="btn-primary"
-          type="submit"
-          aria-label="Refresh data"
-          disabled={!enabled || loading}
-        >
+      <div className="md:self-end">
+        <Button type="submit" aria-label="Refresh data" disabled={!enabled || loading} size="md">
           {loading ? 'Loading...' : 'Refresh now'}
-        </button>
+        </Button>
       </div>
     </form>
   );

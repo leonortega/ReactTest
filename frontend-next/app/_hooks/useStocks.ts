@@ -48,9 +48,12 @@ export function useStocks(
   };
 
   const { data, error, isValidating, mutate } = useSWR<StockData[]>(key, fetcher, {
-    refreshInterval: 5000,
     revalidateOnFocus: false,
-    dedupingInterval: 5000,
+    revalidateIfStale: false,
+    refreshInterval: key ? 5000 : 0,
+    refreshWhenHidden: false,
+    refreshWhenOffline: false,
+    dedupingInterval: 0,
     onSuccess: () => {
       setLastFetchTime(Date.now());
     },

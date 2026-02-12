@@ -1,25 +1,32 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { readStore, writeStore } from '../_lib/storage';
+import { updateStore } from '../_lib/storage';
 import type { Preferences } from '../_lib/types';
 
 const storeFile = 'preferences.json';
 
 const fallback: Preferences = {
-  theme: 'system',
+  theme: 'light',
   currency: 'USD',
   notifications: { email: true, inApp: true },
 };
 
+function parseTheme(value: FormDataEntryValue | null): Preferences['theme'] {
+  return value === 'dark' ? 'dark' : 'light';
+}
+
+function parseCurrency(value: FormDataEntryValue | null): Preferences['currency'] {
+  return value === 'EUR' || value === 'GBP' ? value : 'USD';
+}
+
 export async function updatePreferences(formData: FormData) {
-  const theme = String(formData.get('theme') ?? 'system') as Preferences['theme'];
-  const currency = String(formData.get('currency') ?? 'USD') as Preferences['currency'];
+  const theme = parseTheme(formData.get('theme'));
+  const currency = parseCurrency(formData.get('currency'));
   const email = Boolean(formData.get('email'));
   const inApp = Boolean(formData.get('inApp'));
 
-  const store = await readStore<Preferences>(storeFile, fallback);
-  const next = {
+  await updateStore<Preferences>(storeFile, fallback, (store) => ({
     ...store,
     theme,
     currency,
@@ -27,22 +34,20 @@ export async function updatePreferences(formData: FormData) {
       email,
       inApp,
     },
-  } satisfies Preferences;
+  }));
 
-  await writeStore(storeFile, next);
   revalidatePath('/dashboard/preferences');
   revalidatePath('/dashboard');
 }
 
 export async function updateTheme(formData: FormData) {
-  const theme = String(formData.get('theme') ?? 'system') as Preferences['theme'];
-  const store = await readStore<Preferences>(storeFile, fallback);
-  const next = {
+  const theme = parseTheme(formData.get('theme'));
+
+  await updateStore<Preferences>(storeFile, fallback, (store) => ({
     ...store,
     theme,
-  } satisfies Preferences;
+  }));
 
-  await writeStore(storeFile, next);
   revalidatePath('/');
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/preferences');

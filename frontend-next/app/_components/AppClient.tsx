@@ -1,11 +1,11 @@
 'use client';
 
 import { useCallback, useState, type ChangeEvent } from 'react';
-import useDebouncedValue from '../_hooks/useDebouncedValue';
 import { useStocks } from '../_hooks/useStocks';
 import StockChart from './StockChart';
 import StockControls from './StockControls';
 import ToggleOption from './ToggleOption';
+import Card, { CardTitle } from './ui/Card';
 
 type AppClientProps = {
   initialCompanyId?: string;
@@ -18,6 +18,8 @@ export default function AppClient({
 }: AppClientProps) {
   const [tempCompanyId, setTempCompanyId] = useState(initialCompanyId);
   const [tempDate, setTempDate] = useState(initialDate);
+  const [queryCompanyId, setQueryCompanyId] = useState(initialCompanyId);
+  const [queryDate, setQueryDate] = useState(initialDate);
 
   const [showPoints, setShowPoints] = useState(false);
   const [showSMA, setShowSMA] = useState(true);
@@ -27,9 +29,6 @@ export default function AppClient({
   const [emaWindow, setEmaWindow] = useState(8);
   const [rsiWindow, setRsiWindow] = useState(14);
 
-  const debouncedCompanyId = useDebouncedValue(tempCompanyId, 600);
-  const debouncedDate = useDebouncedValue(tempDate, 600);
-
   const {
     stockData = [],
     status,
@@ -37,7 +36,7 @@ export default function AppClient({
     refetch,
     isFetching,
     lastFetchTime,
-  } = useStocks(debouncedCompanyId, debouncedDate);
+  } = useStocks(queryCompanyId, queryDate);
 
   const loading = status === 'loading' || isFetching;
 
@@ -50,8 +49,19 @@ export default function AppClient({
   }, []);
 
   const handleSubmit = useCallback(() => {
+    const nextCompanyId = tempCompanyId.trim().toUpperCase();
+    const nextDate = tempDate;
+
+    if (!nextCompanyId || !nextDate) return;
+
+    if (nextCompanyId !== queryCompanyId || nextDate !== queryDate) {
+      setQueryCompanyId(nextCompanyId);
+      setQueryDate(nextDate);
+      return;
+    }
+
     refetch();
-  }, [refetch]);
+  }, [queryCompanyId, queryDate, refetch, tempCompanyId, tempDate]);
 
   const handleShowPointsChange = useCallback((checked: boolean) => {
     setShowPoints(checked);
@@ -82,87 +92,92 @@ export default function AppClient({
   }, []);
 
   return (
-    <div className="p-6 text-slate-900">
+    <div className="px-6 py-8 text-text">
       <a className="sr-only focus:not-sr-only" href="#main">
         Skip to content
       </a>
-      <div id="main" role="main" className="mx-auto max-w-[980px]">
-        <header className="mb-2">
-          <div className="site-title">MarketPulse Analytics</div>
-          <div className="site-subtitle">Live stock visualization</div>
+      <main id="main" role="main" className="mx-auto grid max-w-[980px] gap-4">
+        <header className="grid gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-text">MarketPulse Analytics</h1>
+          <p className="site-subtitle">Live stock visualization</p>
         </header>
 
-        <StockControls
-          tempCompanyId={tempCompanyId}
-          tempDate={tempDate}
-          onTempCompanyIdChange={handleTempCompanyIdChange}
-          onTempDateChange={handleTempDateChange}
-          onSubmit={handleSubmit}
-          enabled={Boolean(tempCompanyId && tempDate)}
-          loading={loading}
-        />
-
-        <div className="last-fetch">
-          {lastFetchTime
-            ? `Last API call: ${new Date(lastFetchTime).toLocaleString()}`
-            : 'No API calls yet'}
-        </div>
-
-        <div className="mb-2 flex flex-wrap items-center gap-3">
-          <ToggleOption
-            label="Show points"
-            checked={showPoints}
-            onChange={handleShowPointsChange}
+        <Card variant="form" className="grid gap-3">
+          <StockControls
+            tempCompanyId={tempCompanyId}
+            tempDate={tempDate}
+            onTempCompanyIdChange={handleTempCompanyIdChange}
+            onTempDateChange={handleTempDateChange}
+            onSubmit={handleSubmit}
+            enabled={Boolean(tempCompanyId && tempDate)}
+            loading={loading}
           />
-          <ToggleOption label="Show SMA" checked={showSMA} onChange={handleShowSmaChange} />
-          <ToggleOption label="Show EMA" checked={showEMA} onChange={handleShowEmaChange} />
-          <ToggleOption label="Show RSI" checked={showRSI} onChange={handleShowRsiChange} />
-          {showSMA && (
-            <label className="control-label inline-flex items-center gap-2 text-sm text-slate-900">
-              <span>Window</span>
-              <input
-                aria-label="SMA window"
-                type="number"
-                min={1}
-                value={smaWindow}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  handleSmaWindowChange(e.target.value)
-                }
-                className="small-input"
-              />
-            </label>
-          )}
-          {showEMA && (
-            <label className="control-label inline-flex items-center gap-2 text-sm text-slate-900">
-              <span>EMA</span>
-              <input
-                aria-label="EMA window"
-                type="number"
-                min={1}
-                value={emaWindow}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  handleEmaWindowChange(e.target.value)
-                }
-                className="small-input"
-              />
-            </label>
-          )}
-          {showRSI && (
-            <label className="control-label inline-flex items-center gap-2 text-sm text-slate-900">
-              <span>RSI</span>
-              <input
-                aria-label="RSI window"
-                type="number"
-                min={1}
-                value={rsiWindow}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  handleRsiWindowChange(e.target.value)
-                }
-                className="small-input"
-              />
-            </label>
-          )}
-        </div>
+
+          <div className="last-fetch mb-0">
+            {lastFetchTime
+              ? `Last API call: ${new Date(lastFetchTime).toLocaleString()}`
+              : 'No API calls yet'}
+          </div>
+        </Card>
+
+        <Card variant="panel" className="grid gap-3">
+          <CardTitle className="text-base">Indicators</CardTitle>
+          <div className="mb-1 flex flex-wrap items-center gap-3">
+            <ToggleOption
+              label="Show points"
+              checked={showPoints}
+              onChange={handleShowPointsChange}
+            />
+            <ToggleOption label="Show SMA" checked={showSMA} onChange={handleShowSmaChange} />
+            <ToggleOption label="Show EMA" checked={showEMA} onChange={handleShowEmaChange} />
+            <ToggleOption label="Show RSI" checked={showRSI} onChange={handleShowRsiChange} />
+            {showSMA && (
+              <label className="control-label inline-flex items-center gap-2">
+                <span>Window</span>
+                <input
+                  aria-label="SMA window"
+                  type="number"
+                  min={1}
+                  value={smaWindow}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    handleSmaWindowChange(e.target.value)
+                  }
+                  className="small-input"
+                />
+              </label>
+            )}
+            {showEMA && (
+              <label className="control-label inline-flex items-center gap-2">
+                <span>EMA</span>
+                <input
+                  aria-label="EMA window"
+                  type="number"
+                  min={1}
+                  value={emaWindow}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    handleEmaWindowChange(e.target.value)
+                  }
+                  className="small-input"
+                />
+              </label>
+            )}
+            {showRSI && (
+              <label className="control-label inline-flex items-center gap-2">
+                <span>RSI</span>
+                <input
+                  aria-label="RSI window"
+                  type="number"
+                  min={1}
+                  value={rsiWindow}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    handleRsiWindowChange(e.target.value)
+                  }
+                  className="small-input"
+                />
+              </label>
+            )}
+          </div>
+        </Card>
 
         <StockChart
           stockData={stockData}
@@ -177,37 +192,44 @@ export default function AppClient({
           error={error}
         />
 
-        <section
-          className="mt-3 max-h-[200px] overflow-auto text-sm text-slate-900"
-          aria-label="Stock data table"
-        >
-          {stockData && stockData.length > 0 && (
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th className="p-2 text-left">Time (UTC)</th>
-                  <th className="p-2 text-left">Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stockData.map((s) => {
-                  const iso = new Date(s.dateTime).toISOString();
-                  return (
-                    <tr key={s.dateTime} className="odd:bg-white even:bg-slate-50">
-                      <td className="p-2 align-top">{iso}</td>
-                      <td className="p-2 align-top">{Math.round(Number(s.price) * 100) / 100}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </section>
+        <Card variant="panel" className="overflow-hidden p-0">
+          <section className="max-h-[240px] overflow-auto text-sm text-text" aria-label="Stock data table">
+            {stockData && stockData.length > 0 ? (
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr>
+                    <th className="sticky top-0 bg-surface-2 p-2 text-left text-xs uppercase tracking-wide text-text-muted">
+                      Time (UTC)
+                    </th>
+                    <th className="sticky top-0 bg-surface-2 p-2 text-right text-xs uppercase tracking-wide text-text-muted">
+                      Price
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stockData.map((s) => {
+                    const iso = new Date(s.dateTime).toISOString();
+                    return (
+                      <tr key={s.dateTime} className="border-b border-border/60 odd:bg-surface even:bg-surface-2">
+                        <td className="p-2 align-top text-data">{iso}</td>
+                        <td className="p-2 text-right align-top text-data">
+                          {Math.round(Number(s.price) * 100) / 100}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            ) : (
+              !loading && <div className="p-4 text-sm text-text-muted">No data in table</div>
+            )}
+          </section>
+        </Card>
 
-        <footer className="mt-4 text-sm text-slate-500">
+        <footer className="text-sm text-text-muted">
           This page calls the backend Stocks API at <code>/api/stocks</code>.
         </footer>
-      </div>
+      </main>
     </div>
   );
 }

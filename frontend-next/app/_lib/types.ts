@@ -42,7 +42,7 @@ export type AlertJob = {
 };
 
 export type Preferences = {
-  theme: 'system' | 'light' | 'dark';
+  theme: 'light' | 'dark';
   currency: 'USD' | 'EUR' | 'GBP';
   notifications: {
     email: boolean;

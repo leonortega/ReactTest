@@ -1,47 +1,59 @@
 import { createWatchlist } from '../../_actions/watchlists';
 import { readStore } from '../../_lib/storage';
 import type { Watchlist } from '../../_lib/types';
+import Button from '../../_components/ui/Button';
+import Card, { CardTitle } from '../../_components/ui/Card';
+import { Field, FieldInput } from '../../_components/ui/Field';
 
 export default async function WatchlistsPage() {
   const store = await readStore<{ items: Watchlist[] }>('watchlists.json', { items: [] });
 
   return (
     <div className="grid gap-6">
-      <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">Create watchlist</h2>
+      <Card variant="form">
+        <CardTitle>Create watchlist</CardTitle>
         <form action={createWatchlist} className="mt-4 grid gap-3 md:grid-cols-3">
-          <input name="name" placeholder="Watchlist name" className="input-base" required />
-          <input
-            name="symbols"
-            placeholder="Symbols (comma separated)"
-            className="input-base md:col-span-2"
-          />
-          <button className="btn-primary md:col-span-3" type="submit">
+          <Field className="md:col-span-1" label="Name" htmlFor="watchlist-name" required>
+            <FieldInput
+              id="watchlist-name"
+              name="name"
+              placeholder="Watchlist name"
+              required
+            />
+          </Field>
+          <Field className="md:col-span-2" label="Symbols" htmlFor="watchlist-symbols">
+            <FieldInput
+              id="watchlist-symbols"
+              name="symbols"
+              placeholder="Symbols (comma separated)"
+            />
+          </Field>
+          <Button className="md:col-span-3" type="submit">
             Save watchlist
-          </button>
+          </Button>
         </form>
-      </section>
+      </Card>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">Your watchlists</h2>
+      <Card variant="panel">
+        <CardTitle>Your watchlists</CardTitle>
         {store.items.length === 0 ? (
-          <p className="mt-3 text-sm text-slate-600">No watchlists yet.</p>
+          <p className="mt-3 text-sm text-text-muted">No watchlists yet.</p>
         ) : (
           <ul className="mt-4 grid gap-3">
             {store.items.map((watchlist) => (
-              <li key={watchlist.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <div className="text-sm text-slate-500">
+              <Card key={watchlist.id} as="li" variant="metric" className="list-none">
+                <div className="text-sm text-text-muted">
                   {new Date(watchlist.createdAt).toLocaleString()}
                 </div>
-                <div className="text-lg font-semibold">{watchlist.name}</div>
-                <div className="text-sm text-slate-600">
+                <div className="mt-1 text-lg font-semibold text-text">{watchlist.name}</div>
+                <div className="text-sm text-text-muted">
                   {watchlist.symbols.join(', ') || 'No symbols yet'}
                 </div>
-              </li>
+              </Card>
             ))}
           </ul>
         )}
-      </section>
+      </Card>
     </div>
   );
 }

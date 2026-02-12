@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createId } from '../_lib/ids';
-import { readStore, writeStore } from '../_lib/storage';
+import { updateStore } from '../_lib/storage';
 import type { Watchlist } from '../_lib/types';
 
 const storeFile = 'watchlists.json';
@@ -20,15 +20,18 @@ export async function createWatchlist(formData: FormData) {
     .map((symbol) => symbol.trim().toUpperCase())
     .filter(Boolean);
 
-  const store = await readStore<{ items: Watchlist[] }>(storeFile, { items: [] });
-  store.items.unshift({
+  const newItem: Watchlist = {
     id: createId(),
     name,
     symbols,
     createdAt: new Date().toISOString(),
-  });
+  };
 
-  await writeStore(storeFile, store);
+  await updateStore<{ items: Watchlist[] }>(storeFile, { items: [] }, (store) => ({
+    ...store,
+    items: [newItem, ...store.items],
+  }));
+
   revalidatePath('/dashboard/watchlists');
   revalidatePath('/dashboard');
 }

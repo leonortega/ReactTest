@@ -1,50 +1,60 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import type { StockData } from '../../../_lib/types';
+import { updateStore } from '../../../_lib/storage';
 
 // Do not cache responses for polling clients
 const cacheHeader = 'no-store';
-const rateLimit = new Map<string, { count: number; resetAt: number }>();
 const maxRequestsPerWindow = 60;
 const windowMs = 60_000;
 const maxRateLimitEntries = 10_000;
-let lastRateLimitSweepAt = 0;
+const rateLimitFile = 'rate-limit.json';
 
-function sweepRateLimit(now: number) {
-  if (now - lastRateLimitSweepAt < windowMs) return;
-  lastRateLimitSweepAt = now;
+type RateLimitEntry = { count: number; resetAt: number };
+type RateLimitStore = { entries: Record<string, RateLimitEntry> };
 
-  for (const [key, entry] of rateLimit.entries()) {
-    if (entry.resetAt <= now) rateLimit.delete(key);
-  }
-
-  if (rateLimit.size <= maxRateLimitEntries) return;
-
-  const overflow = rateLimit.size - maxRateLimitEntries;
-  const oldest = [...rateLimit.entries()]
-    .sort((a, b) => a[1].resetAt - b[1].resetAt)
-    .slice(0, overflow);
-
-  for (const [key] of oldest) {
-    rateLimit.delete(key);
-  }
-}
-
-function checkRateLimit(key: string) {
+async function checkRateLimit(key: string): Promise<{ allowed: boolean; retryAfterSeconds: number }> {
   const now = Date.now();
-  sweepRateLimit(now);
-  const existing = rateLimit.get(key);
+  let allowed = true;
+  let retryAfterSeconds = 0;
 
-  if (!existing || existing.resetAt < now) {
-    rateLimit.set(key, { count: 1, resetAt: now + windowMs });
-    return true;
-  }
+  await updateStore<RateLimitStore>(
+    rateLimitFile,
+    { entries: {} },
+    (store) => {
+      const nextEntries = { ...store.entries };
 
-  if (existing.count >= maxRequestsPerWindow) {
-    return false;
-  }
+      for (const [entryKey, entry] of Object.entries(nextEntries)) {
+        if (entry.resetAt <= now) {
+          delete nextEntries[entryKey];
+        }
+      }
 
-  existing.count += 1;
-  return true;
+      const existing = nextEntries[key];
+      if (!existing || existing.resetAt <= now) {
+        nextEntries[key] = { count: 1, resetAt: now + windowMs };
+      } else if (existing.count >= maxRequestsPerWindow) {
+        allowed = false;
+        retryAfterSeconds = Math.max(1, Math.ceil((existing.resetAt - now) / 1000));
+      } else {
+        nextEntries[key] = { ...existing, count: existing.count + 1 };
+      }
+
+      const keys = Object.keys(nextEntries);
+      if (keys.length > maxRateLimitEntries) {
+        const overflow = keys.length - maxRateLimitEntries;
+        const oldestKeys = keys
+          .sort((a, b) => nextEntries[a].resetAt - nextEntries[b].resetAt)
+          .slice(0, overflow);
+        for (const oldKey of oldestKeys) {
+          delete nextEntries[oldKey];
+        }
+      }
+
+      return { entries: nextEntries };
+    },
+  );
+
+  return { allowed, retryAfterSeconds };
 }
 
 export async function GET(
@@ -61,13 +71,23 @@ export async function GET(
   }
 
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
-  const rateKey = `${ip}|${companyId}|${date}`;
+  // Rate-limit by caller identity to prevent bypass through query variation.
+  const rateKey = ip;
 
-  if (ip !== 'local' && !checkRateLimit(rateKey)) {
-    return NextResponse.json(
-      { error: 'Rate limit exceeded' },
-      { status: 429, headers: { 'Cache-Control': cacheHeader } },
-    );
+  if (ip !== 'local') {
+    const { allowed, retryAfterSeconds } = await checkRateLimit(rateKey);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded' },
+        {
+          status: 429,
+          headers: {
+            'Cache-Control': cacheHeader,
+            'Retry-After': String(retryAfterSeconds),
+          },
+        },
+      );
+    }
   }
 
   const baseUrl = process.env.INTERNAL_API_BASE_URL;
