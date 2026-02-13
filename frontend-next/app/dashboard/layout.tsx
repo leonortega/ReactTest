@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import DashboardNav from '../_components/DashboardNav';
+import Card from '../_components/ui/Card';
 
 export const metadata = {
   title: 'Dashboard | MarketPulse',
@@ -8,11 +9,13 @@ export const metadata = {
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="mx-auto max-w-[1100px] px-6 pt-10">
-        <h1 className="text-2xl font-semibold">MarketPulse Dashboard</h1>
-        <p className="text-sm text-slate-600">Manage portfolios, alerts, and preferences.</p>
-        <div className="mt-4">
+    <div className="min-h-screen bg-bg">
+      <header className="mx-auto grid max-w-[1100px] gap-4 px-6 pt-8">
+        <Card variant="elevated" className="grid gap-1 p-5">
+          <h1 className="text-2xl font-semibold tracking-tight text-text">MarketPulse Dashboard</h1>
+          <p className="text-sm text-text-muted">Manage portfolios, alerts, and preferences.</p>
+        </Card>
+        <div>
           <DashboardNav />
         </div>
       </header>

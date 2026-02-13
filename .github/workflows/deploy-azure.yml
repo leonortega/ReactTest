@@ -7,7 +7,7 @@ on:
 
 env:
   IMAGE_TAG: ${{ github.sha }}
-  FRONTEND_PORT: 3000
+  FRONTEND_PORT: 80
   STOCKSAPI_PORT: 8080
 
 jobs:
@@ -107,7 +107,7 @@ jobs:
           push: true
           tags: ${{ secrets.ACR_LOGIN_SERVER }}/frontend-next:${{ env.IMAGE_TAG }}
           build-args: |
-            NEXT_PUBLIC_API_BASE_URL=${{ secrets.NEXT_PUBLIC_API_BASE_URL }}
+            INTERNAL_API_BASE_URL=${{ secrets.INTERNAL_API_BASE_URL }}
 
       - name: Validate images in ACR
         run: |

@@ -1,27 +1,49 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { createId } from '../_lib/ids';
-import { readStore, writeStore } from '../_lib/storage';
+import { updateStore } from '../_lib/storage';
 import type { Alert, AlertJob, Notification } from '../_lib/types';
 
 const alertsFile = 'alerts.json';
 const notificationsFile = 'notifications.json';
 const jobsFile = 'jobs.json';
+const symbolPattern = /^[A-Z0-9.-]{1,15}$/;
 
-export async function createAlert(formData: FormData) {
-  const symbol = String(formData.get('symbol') ?? '')
+function parseSymbol(value: FormDataEntryValue | null): string | null {
+  const symbol = String(value ?? '')
     .trim()
     .toUpperCase();
-  const threshold = Number(formData.get('threshold'));
-  const direction = String(formData.get('direction') ?? 'above') as Alert['direction'];
-  const schedule = String(formData.get('schedule') ?? 'realtime') as Alert['schedule'];
+  return symbolPattern.test(symbol) ? symbol : null;
+}
 
-  if (!symbol || Number.isNaN(threshold)) {
-    return;
+function parseThreshold(value: FormDataEntryValue | null): number | null {
+  const threshold = Number(value);
+  if (!Number.isFinite(threshold) || threshold <= 0) return null;
+  return Math.round(threshold * 100) / 100;
+}
+
+function parseDirection(value: FormDataEntryValue | null): Alert['direction'] | null {
+  return value === 'above' || value === 'below' ? value : null;
+}
+
+function parseSchedule(value: FormDataEntryValue | null): Alert['schedule'] | null {
+  return value === 'realtime' || value === 'daily' || value === 'weekly' ? value : null;
+}
+
+export async function createAlert(formData: FormData) {
+  const symbol = parseSymbol(formData.get('symbol'));
+  const threshold = parseThreshold(formData.get('threshold'));
+  const directionEntry = formData.get('direction');
+  const scheduleEntry = formData.get('schedule');
+  const direction = directionEntry === null ? 'above' : parseDirection(directionEntry);
+  const schedule = scheduleEntry === null ? 'realtime' : parseSchedule(scheduleEntry);
+
+  if (!symbol || threshold === null || !direction || !schedule) {
+    redirect('/dashboard/alerts?error=invalid-input');
   }
 
-  const alertsStore = await readStore<{ items: Alert[] }>(alertsFile, { items: [] });
   const alert: Alert = {
     id: createId(),
     symbol,
@@ -32,14 +54,13 @@ export async function createAlert(formData: FormData) {
     createdAt: new Date().toISOString(),
   };
 
-  alertsStore.items.unshift(alert);
-  await writeStore(alertsFile, alertsStore);
+  await updateStore<{ items: Alert[] }>(alertsFile, { items: [] }, (store) => ({
+    ...store,
+    items: [alert, ...store.items],
+  }));
 
-  const notificationsStore = await readStore<{ items: Notification[] }>(notificationsFile, {
-    items: [],
-  });
   const message = `Alert set for ${symbol} ${direction} ${threshold}.`;
-  notificationsStore.items.unshift(
+  const notifications: Notification[] = [
     {
       id: createId(),
       alertId: alert.id,
@@ -56,17 +77,24 @@ export async function createAlert(formData: FormData) {
       createdAt: new Date().toISOString(),
       read: false,
     },
-  );
-  await writeStore(notificationsFile, notificationsStore);
+  ];
 
-  const jobsStore = await readStore<{ items: AlertJob[] }>(jobsFile, { items: [] });
-  jobsStore.items.unshift({
+  await updateStore<{ items: Notification[] }>(notificationsFile, { items: [] }, (store) => ({
+    ...store,
+    items: [...notifications, ...store.items],
+  }));
+
+  const job: AlertJob = {
     id: createId(),
     alertId: alert.id,
     runAt: new Date(Date.now() + 60_000).toISOString(),
     status: 'queued',
-  });
-  await writeStore(jobsFile, jobsStore);
+  };
+
+  await updateStore<{ items: AlertJob[] }>(jobsFile, { items: [] }, (store) => ({
+    ...store,
+    items: [job, ...store.items],
+  }));
 
   revalidatePath('/dashboard/alerts');
   revalidatePath('/dashboard/alerts/history');

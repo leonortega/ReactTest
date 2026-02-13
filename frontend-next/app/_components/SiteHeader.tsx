@@ -14,47 +14,45 @@ export default function SiteHeader({ theme }: SiteHeaderProps) {
   const nextTheme = isDark ? 'light' : 'dark';
 
   return (
-    <header className="mx-auto flex max-w-[1100px] items-center gap-3 px-6 py-6">
-      <Link className="flex items-center gap-3" href="/" aria-label="MarketPulse home">
-        <Image src={logo} alt="MarketPulse" width={40} height={40} priority />
-        <div>
-          <div className="site-title text-lg">MarketPulse</div>
-          <div className="site-subtitle">Real-time stock intelligence</div>
-        </div>
-      </Link>
-      <form action={updateTheme} className="ml-auto">
-        <input type="hidden" name="theme" value={nextTheme} />
-        <button
-          className={`relative flex h-10 w-[88px] items-center rounded-full border px-2 ${
-            isDark
-              ? 'border-slate-900/80 bg-slate-900 text-white'
-              : 'border-slate-200 bg-white text-slate-900'
-          }`}
-          type="submit"
-          aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
-          title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
-        >
-          <SunIcon
-            aria-hidden="true"
-            className={`absolute left-3 h-4 w-4 ${isDark ? 'text-white/35' : 'text-slate-700'}`}
-          />
-          <MoonIcon
-            aria-hidden="true"
-            className={`absolute right-3 h-4 w-4 ${isDark ? 'text-white' : 'text-slate-300'}`}
-          />
-          <span
-            className={`absolute left-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 transition-transform duration-200 ${
-              isDark ? 'translate-x-[44px]' : 'translate-x-0'
-            }`}
+    <header className="border-b border-border/80 bg-surface/90 backdrop-blur">
+      <div className="mx-auto flex max-w-[1100px] items-center gap-3 px-6 py-5">
+        <Link className="flex items-center gap-3 no-underline" href="/" aria-label="MarketPulse home">
+          <Image src={logo} alt="MarketPulse" width={40} height={40} priority />
+          <div>
+            <div className="site-title">MarketPulse</div>
+            <div className="site-subtitle">Real-time stock intelligence</div>
+          </div>
+        </Link>
+        <form action={updateTheme} className="ml-auto">
+          <input type="hidden" name="theme" value={nextTheme} />
+          <button
+            className="relative flex h-10 w-[92px] items-center rounded-full border border-border bg-surface px-2 text-text transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+            type="submit"
+            aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+            title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
           >
-            {isDark ? (
-              <MoonIcon aria-hidden="true" className="h-4 w-4 text-white" />
-            ) : (
-              <SunIcon aria-hidden="true" className="h-4 w-4 text-white" />
-            )}
-          </span>
-        </button>
-      </form>
+            <SunIcon
+              aria-hidden="true"
+              className={`absolute left-3 h-4 w-4 ${isDark ? 'text-text-muted/60' : 'text-warning'}`}
+            />
+            <MoonIcon
+              aria-hidden="true"
+              className={`absolute right-3 h-4 w-4 ${isDark ? 'text-brand' : 'text-text-muted/70'}`}
+            />
+            <span
+              className={`absolute left-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-brand text-white shadow-1 transition-transform duration-base ${
+                isDark ? 'translate-x-[46px]' : 'translate-x-0'
+              }`}
+            >
+              {isDark ? (
+                <MoonIcon aria-hidden="true" className="h-4 w-4 text-white" />
+              ) : (
+                <SunIcon aria-hidden="true" className="h-4 w-4 text-white" />
+              )}
+            </span>
+          </button>
+        </form>
+      </div>
     </header>
   );
 }

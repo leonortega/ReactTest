@@ -1,28 +1,69 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import type { StockData } from '../../../_lib/types';
+import { parseCompanyId, parseIsoDate } from '../../../_lib/requestValidation';
 
-const defaultBaseUrl = 'http://localhost:8080/api';
 // Do not cache responses for polling clients
 const cacheHeader = 'no-store';
-const rateLimit = new Map<string, { count: number; resetAt: number }>();
 const maxRequestsPerWindow = 60;
 const windowMs = 60_000;
+const maxRateLimitEntries = 10_000;
 
-function checkRateLimit(key: string) {
+type RateLimitEntry = { count: number; resetAt: number };
+const rateLimitEntries = new Map<string, RateLimitEntry>();
+
+function getRateLimitKey(request: NextRequest): string {
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  const forwardedIp = forwardedFor?.split(',')[0]?.trim();
+  const realIp = request.headers.get('x-real-ip')?.trim();
+  const clientIp = forwardedIp || realIp || 'anonymous';
+  const userAgent = (request.headers.get('user-agent') ?? 'unknown').trim().slice(0, 80);
+  return `${clientIp}|${userAgent}`;
+}
+
+function checkRateLimit(key: string): { allowed: boolean; retryAfterSeconds: number } {
   const now = Date.now();
-  const existing = rateLimit.get(key);
-
-  if (!existing || existing.resetAt < now) {
-    rateLimit.set(key, { count: 1, resetAt: now + windowMs });
-    return true;
+  for (const [entryKey, entry] of rateLimitEntries.entries()) {
+    if (entry.resetAt <= now) {
+      rateLimitEntries.delete(entryKey);
+    }
   }
 
-  if (existing.count >= maxRequestsPerWindow) {
-    return false;
+  const existing = rateLimitEntries.get(key);
+  if (!existing || existing.resetAt <= now) {
+    rateLimitEntries.set(key, { count: 1, resetAt: now + windowMs });
+  } else if (existing.count >= maxRequestsPerWindow) {
+    const retryAfterSeconds = Math.max(1, Math.ceil((existing.resetAt - now) / 1000));
+    return { allowed: false, retryAfterSeconds };
+  } else {
+    rateLimitEntries.set(key, { ...existing, count: existing.count + 1 });
   }
 
-  existing.count += 1;
-  return true;
+  if (rateLimitEntries.size > maxRateLimitEntries) {
+    const overflow = rateLimitEntries.size - maxRateLimitEntries;
+    const oldestKeys = [...rateLimitEntries.entries()]
+      .sort((a, b) => a[1].resetAt - b[1].resetAt)
+      .slice(0, overflow)
+      .map(([entryKey]) => entryKey);
+    for (const oldKey of oldestKeys) {
+      rateLimitEntries.delete(oldKey);
+    }
+  }
+
+  return { allowed: true, retryAfterSeconds: 0 };
+}
+
+function getInternalApiBaseUrl(): string | null {
+  const configuredValue = process.env.INTERNAL_API_BASE_URL;
+  if (!configuredValue) {
+    return null;
+  }
+
+  const normalized = configuredValue.trim().replace(/^['"]|['"]$/g, '');
+  return normalized || null;
+}
+
+export function __resetRateLimitForTests() {
+  rateLimitEntries.clear();
 }
 
 export async function GET(
@@ -31,29 +72,43 @@ export async function GET(
 ) {
   const { searchParams } = new URL(request.url);
   const resolvedParams = await params;
-  const companyId = resolvedParams.companyId ? decodeURIComponent(resolvedParams.companyId) : null;
-  const date = searchParams.get('date');
+  const companyId = parseCompanyId(resolvedParams.companyId);
+  const date = parseIsoDate(searchParams.get('date'));
 
   if (!companyId || !date) {
-    return NextResponse.json({ error: 'companyId and date are required' }, { status: 400 });
-  }
-
-  const ip = request.headers.get('x-forwarded-for') ?? 'local';
-  const rateKey = `${ip}|${companyId}|${date}`;
-
-  if (ip !== 'local' && !checkRateLimit(rateKey)) {
     return NextResponse.json(
-      { error: 'Rate limit exceeded' },
-      { status: 429, headers: { 'Cache-Control': cacheHeader } },
+      { error: 'companyId and date are required' },
+      { status: 400, headers: { 'Cache-Control': cacheHeader } },
     );
   }
 
-  const configuredBaseUrl = process.env.INTERNAL_API_BASE_URL ?? '';
-  const baseUrl = (configuredBaseUrl.startsWith('http') ? configuredBaseUrl : defaultBaseUrl).replace(
-    /\/$/,
-    '',
-  );
-  const apiUrl = `${baseUrl}/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(date)}`;
+  // Enforce rate limiting for every request to prevent unauthenticated bypasses.
+  const { allowed, retryAfterSeconds } = checkRateLimit(getRateLimitKey(request));
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded' },
+      {
+        status: 429,
+        headers: {
+          'Cache-Control': cacheHeader,
+          'Retry-After': String(retryAfterSeconds),
+        },
+      },
+    );
+  }
+
+  const baseUrl = getInternalApiBaseUrl();
+
+  if (!baseUrl) {
+    return NextResponse.json(
+      { error: 'INTERNAL_API_BASE_URL is not configured' },
+      { status: 500, headers: { 'Cache-Control': cacheHeader } },
+    );
+  }
+
+  const apiUrl = `${baseUrl.replace(/\/$/, '')}/stocks/${encodeURIComponent(companyId)}?date=${encodeURIComponent(
+    date,
+  )}`;
 
   try {
     const response = await fetch(apiUrl, { cache: 'no-store' });
@@ -74,9 +129,10 @@ export async function GET(
 
     return NextResponse.json(data, { status: 200, headers: { 'Cache-Control': cacheHeader } });
   } catch (error) {
+    console.error('Failed to fetch stocks from upstream API', { companyId, date, error });
     return NextResponse.json(
-      { error: String(error) },
-      { status: 500, headers: { 'Cache-Control': cacheHeader } },
+      { error: 'Unable to reach Stocks API configured by INTERNAL_API_BASE_URL' },
+      { status: 502, headers: { 'Cache-Control': cacheHeader } },
     );
   }
 }

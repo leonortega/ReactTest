@@ -29,4 +29,26 @@ describe('StockChart', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent(/boom/i);
   });
+
+  it('computes RSI using Wilder smoothing', () => {
+    const prices = [
+      100, 101, 102, 101, 103, 104, 103, 105, 106, 104,
+      103, 102, 101, 102, 103, 104, 105, 106, 107, 108,
+    ];
+    const stockData = prices.map((price, index) => ({
+      dateTime: new Date(Date.UTC(2024, 0, 1, 10, index)).toISOString(),
+      price,
+    }));
+
+    render(<StockChart stockData={stockData} loading={false} showRSI />);
+
+    const chartPayload = screen.getByTestId('chart').textContent ?? '{}';
+    const parsed = JSON.parse(chartPayload) as {
+      datasets?: Array<{ label?: string; data?: number[] }>;
+    };
+    const rsiDataset = parsed.datasets?.find((dataset) => dataset.label?.startsWith('RSI'));
+
+    expect(rsiDataset).toBeDefined();
+    expect(rsiDataset?.data?.[15]).toBeCloseTo(61.28, 2);
+  });
 });

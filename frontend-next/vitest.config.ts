@@ -12,9 +12,8 @@ export default defineConfig({
     globals: true,
     include: ['tests/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['tests/e2e/**', '**/node_modules/**', '.next/**'],
-    maxConcurrency: 1,
-    sequence: {
-      concurrent: false,
-    },
+    hookTimeout: 30000,
+    maxConcurrency: 4,
+    maxWorkers: 2,
   },
 });

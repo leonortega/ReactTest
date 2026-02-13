@@ -19,7 +19,7 @@ beforeEach(async () => {
   await writeStore('notifications.json', { items: [] });
   await writeStore('jobs.json', { items: [] });
   await writeStore('preferences.json', {
-    theme: 'system',
+    theme: 'light',
     currency: 'USD',
     notifications: { email: true, inApp: true },
   });
@@ -75,7 +75,7 @@ describe('server actions', () => {
       currency: string;
       notifications: { email: boolean; inApp: boolean };
     }>('preferences.json', {
-      theme: 'system',
+      theme: 'light',
       currency: 'USD',
       notifications: { email: true, inApp: true },
     });

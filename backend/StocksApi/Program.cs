@@ -47,7 +47,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("./swagger/v1/swagger.json", "StocksApi v1");
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "StocksApi v1");
         options.RoutePrefix = string.Empty;
     });
 }

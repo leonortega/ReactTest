@@ -2,6 +2,6 @@ services:
   stocksapi:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=80
+      - ASPNETCORE_HTTP_PORTS=8080
     ports:
-      - "60480:80"
+      - "60480:8080"
