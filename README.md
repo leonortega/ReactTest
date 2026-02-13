@@ -41,7 +41,9 @@ npm run dev
   - For local `npm run dev` from `frontend-next`, create `frontend-next/.env.local` with:
     - `INTERNAL_API_BASE_URL=http://localhost:60480/api`
   - For Docker Compose, keep root `.env` with:
-    - `INTERNAL_API_BASE_URL=http://stocksapi/api`
+    - `INTERNAL_API_BASE_URL=http://stocksapi:8080/api`
+  - For Azure App Service sidecars via `.github/workflows/deploy-azure.yml`, set:
+    - `INTERNAL_API_BASE_URL=http://localhost:8080/api`
 
 Environment
 
@@ -50,7 +52,8 @@ Environment
 ```
 INTERNAL_API_BASE_URL=http://localhost:60480/api
 ```
-If you run the backend through Docker or Docker Compose, point the variable at the container hostname instead (for example `http://stocksapi/api`). The browser-side code still hits `/api/stocks/...` so internal hostnames remain on the server.
+If you run the backend through Docker or Docker Compose, point the variable at the container hostname and port used by the backend container (for example `http://stocksapi:8080/api`). The browser-side code still hits `/api/stocks/...` so internal hostnames remain on the server.
+For Azure App Service sidecars in this repository's workflow, use `http://localhost:8080/api` because the `stocksapi` sidecar is exposed on port `8080` to the main frontend container.
 
 Tests
 

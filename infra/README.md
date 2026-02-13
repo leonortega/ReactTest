@@ -26,8 +26,8 @@ The repository includes `.github/workflows/deploy-azure.yml`, which will:
 
 1. Deploy the Bicep template into the specified resource group
 2. Build and push container images to ACR
-3. Generate a `deploy-compose.yml` referencing the pushed images
-4. Configure the Web App to use the compose file and restart it
+3. Configure App Service `sitecontainers` for `frontend-next` (main) and `stocksapi` (sidecar)
+4. Set required container app settings and restart the Web App
 
 Secrets / repository variables required in GitHub repository settings:
 - `AZURE_CREDENTIALS`: Service principal JSON for `azure/login` action
@@ -38,12 +38,13 @@ Secrets / repository variables required in GitHub repository settings:
 - `ACR_NAME`: ACR resource name
 - `ACR_LOGIN_SERVER`: ACR login server (e.g., `myregistry.azurecr.io`)
 - `ACR_RESOURCE_GROUP`: Resource group that hosts the ACR (optional if it matches `RESOURCE_GROUP`)
-- `INTERNAL_API_BASE_URL`: Internal backend base URL used by the server-side proxy (e.g., `http://stocksapi/api`). Set this as an App Setting / Container App env in Azure.
+- `INTERNAL_API_BASE_URL`: Internal backend base URL used by the server-side proxy. For this sidecar setup, use `http://localhost:8080/api` (the workflow deploys `stocksapi` on target port `8080`).
 - Optional (for credentials variant): `ACR_USERNAME`, `ACR_PASSWORD`
 
 ## Notes
 Notes
 - The Bicep template references an existing ACR by name. Do not enable anonymous pulls for the registry.
 - The deployed container's runtime should be configured with the `INTERNAL_API_BASE_URL` App Setting so the server route can reach the internal backend (this keeps internal hostnames out of client bundles).
+- In Docker Compose, `http://stocksapi:8080/api` is correct. In Azure App Service sidecars for this repo, use `http://localhost:8080/api`.
 - Consider using a dedicated resource group for infra resources and least-privilege service principal for CI/CD.
 - For production, consider a higher App Service SKU than `B1` and enable diagnostic logging.

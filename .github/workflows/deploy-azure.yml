@@ -7,7 +7,7 @@ on:
 
 env:
   IMAGE_TAG: ${{ github.sha }}
-  FRONTEND_PORT: 3000
+  FRONTEND_PORT: 80
   STOCKSAPI_PORT: 8080
 
 jobs:

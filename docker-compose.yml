@@ -6,8 +6,9 @@ services:
       dockerfile: Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
     ports:
-      - "60480:80"
+      - "60480:8080"
     networks:
       - app-network
 
@@ -32,8 +33,9 @@ services:
       dockerfile: deploy/Dockerfile
     environment:
       - INTERNAL_API_BASE_URL=${INTERNAL_API_BASE_URL}
+      - PORT=80
     ports:
-      - "3000:3000"
+      - "3000:80"
     depends_on:
       - stocksapi
     networks:
