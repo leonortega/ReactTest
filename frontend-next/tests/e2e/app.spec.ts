@@ -22,5 +22,5 @@ test('loads stocks data and shows table', async ({ page }: { page: Page }) => {
 
   await expect(page.getByRole('table')).toBeVisible();
   await expect(page.getByText('Show points')).toBeVisible();
-  await expect(page.getByText(/last api call/i)).toBeVisible();
+  await expect(page.getByText(/last updated/i)).toBeVisible();
 });

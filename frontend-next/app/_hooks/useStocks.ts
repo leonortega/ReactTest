@@ -2,6 +2,10 @@
 
 import { useState } from 'react';
 import useSWR from 'swr';
+import {
+  DEFAULT_STOCK_AUTO_REFRESH_SECONDS,
+  clampStockAutoRefreshSeconds,
+} from '../_lib/stockPollingConfig';
 import type { StockData } from '../_lib/types';
 
 type ErrorPayload = {
@@ -34,11 +38,22 @@ export interface UseStocksResult {
   lastFetchTime: number | null;
 }
 
+type UseStocksOptions = {
+  autoRefreshEnabled?: boolean;
+  autoRefreshSeconds?: number;
+};
+
 export function useStocks(
   companyId: string,
   date: string,
+  options: UseStocksOptions = {},
 ): UseStocksResult {
   const [lastFetchTime, setLastFetchTime] = useState<number | null>(null);
+  const autoRefreshEnabled = options.autoRefreshEnabled ?? true;
+  const autoRefreshSeconds = clampStockAutoRefreshSeconds(
+    options.autoRefreshSeconds ?? DEFAULT_STOCK_AUTO_REFRESH_SECONDS,
+  );
+  const refreshIntervalMs = autoRefreshEnabled ? autoRefreshSeconds * 1000 : 0;
 
   const key =
     companyId && date
@@ -48,7 +63,7 @@ export function useStocks(
   const { data, error, isValidating, mutate } = useSWR<StockData[]>(key, fetchJson, {
     revalidateOnFocus: false,
     revalidateIfStale: false,
-    refreshInterval: key ? 5000 : 0,
+    refreshInterval: key ? refreshIntervalMs : 0,
     refreshWhenHidden: false,
     refreshWhenOffline: false,
     dedupingInterval: 1000,

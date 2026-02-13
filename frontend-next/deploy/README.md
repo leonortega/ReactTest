@@ -18,3 +18,4 @@ Notes
 - The frontend browser bundle calls the Next API proxy (`/api/stocks/...`). The server-side proxy forwards to the internal backend configured via the `INTERNAL_API_BASE_URL` environment variable inside the container.
   - Docker Compose example: `INTERNAL_API_BASE_URL=http://stocksapi:8080/api`
   - Azure App Service sidecar example in this repo: `INTERNAL_API_BASE_URL=http://localhost:8080/api`
+- Default auto-refresh interval in the analytics UI can be configured at build time with `NEXT_PUBLIC_STOCKS_AUTO_REFRESH_SECONDS` (valid range `5` to `120`; values outside this range are clamped).

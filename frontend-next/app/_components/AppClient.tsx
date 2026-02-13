@@ -1,7 +1,11 @@
 'use client';
 
-import { useCallback, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 import { useStocks } from '../_hooks/useStocks';
+import {
+  DEFAULT_STOCK_AUTO_REFRESH_SECONDS,
+  clampStockAutoRefreshSeconds,
+} from '../_lib/stockPollingConfig';
 import StockChart from './StockChart';
 import StockControls from './StockControls';
 import ToggleOption from './ToggleOption';
@@ -21,6 +25,31 @@ function formatUtcDateTime(value: string): string {
   return parsed.toISOString();
 }
 
+function formatRelativeTime(lastFetchTime: number, nowMs: number): string {
+  const elapsedSeconds = Math.max(0, Math.floor((nowMs - lastFetchTime) / 1000));
+
+  if (elapsedSeconds < 60) return `${elapsedSeconds}s ago`;
+
+  const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+  if (elapsedMinutes < 60) return `${elapsedMinutes}m ago`;
+
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 24) return `${elapsedHours}h ago`;
+
+  const elapsedDays = Math.floor(elapsedHours / 24);
+  return `${elapsedDays}d ago`;
+}
+
+function getSecondsUntilNextRefresh(
+  lastFetchTime: number,
+  autoRefreshSeconds: number,
+  nowMs: number,
+): number {
+  const elapsedSeconds = Math.max(0, Math.floor((nowMs - lastFetchTime) / 1000));
+  const remainder = elapsedSeconds % autoRefreshSeconds;
+  return remainder === 0 ? autoRefreshSeconds : autoRefreshSeconds - remainder;
+}
+
 export default function AppClient({
   initialCompanyId = 'ABC',
   initialDate = '2024-01-01',
@@ -29,6 +58,11 @@ export default function AppClient({
   const [tempDate, setTempDate] = useState(initialDate);
   const [queryCompanyId, setQueryCompanyId] = useState(initialCompanyId);
   const [queryDate, setQueryDate] = useState(initialDate);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [autoRefreshSeconds, setAutoRefreshSeconds] = useState(
+    DEFAULT_STOCK_AUTO_REFRESH_SECONDS,
+  );
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   const [showPoints, setShowPoints] = useState(false);
   const [showSMA, setShowSMA] = useState(true);
@@ -37,6 +71,11 @@ export default function AppClient({
   const [smaWindow, setSmaWindow] = useState(5);
   const [emaWindow, setEmaWindow] = useState(8);
   const [rsiWindow, setRsiWindow] = useState(14);
+  const normalizedTempCompanyId = tempCompanyId.trim().toUpperCase();
+  const hasCompleteTempFilters = Boolean(normalizedTempCompanyId && tempDate);
+  const hasPendingQueryChanges =
+    hasCompleteTempFilters &&
+    (normalizedTempCompanyId !== queryCompanyId || tempDate !== queryDate);
 
   const {
     stockData = [],
@@ -45,7 +84,10 @@ export default function AppClient({
     refetch,
     isFetching,
     lastFetchTime,
-  } = useStocks(queryCompanyId, queryDate);
+  } = useStocks(queryCompanyId, queryDate, {
+    autoRefreshEnabled: autoRefreshEnabled && !hasPendingQueryChanges,
+    autoRefreshSeconds,
+  });
 
   const loading = status === 'loading' || isFetching;
 
@@ -55,6 +97,16 @@ export default function AppClient({
 
   const handleTempDateChange = useCallback((value: string) => {
     setTempDate(value);
+  }, []);
+
+  const handleAutoRefreshEnabledChange = useCallback((checked: boolean) => {
+    setAutoRefreshEnabled(checked);
+  }, []);
+
+  const handleAutoRefreshSecondsChange = useCallback((value: string) => {
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isNaN(parsed)) return;
+    setAutoRefreshSeconds(clampStockAutoRefreshSeconds(parsed));
   }, []);
 
   const handleSubmit = useCallback(() => {
@@ -100,11 +152,55 @@ export default function AppClient({
     setRsiWindow(Number(value) || 1);
   }, []);
 
+  useEffect(() => {
+    if (!autoRefreshEnabled || !hasCompleteTempFilters || !hasPendingQueryChanges) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setQueryCompanyId(normalizedTempCompanyId);
+      setQueryDate(tempDate);
+    }, 450);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    autoRefreshEnabled,
+    hasCompleteTempFilters,
+    hasPendingQueryChanges,
+    normalizedTempCompanyId,
+    tempDate,
+  ]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setNowMs(Date.now());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  const statusPillText = autoRefreshEnabled
+    ? `Auto update on (${autoRefreshSeconds}s)`
+    : 'Auto update off';
+
+  const nextRefreshText =
+    autoRefreshEnabled && hasPendingQueryChanges
+      ? 'Applying new company/date...'
+      : 
+    autoRefreshEnabled && lastFetchTime
+      ? `Next refresh in ${getSecondsUntilNextRefresh(lastFetchTime, autoRefreshSeconds, nowMs)}s`
+      : autoRefreshEnabled
+        ? 'Next refresh after first successful call'
+        : 'Refresh manually';
+
+  const lastCallText = lastFetchTime
+    ? `Last updated ${formatRelativeTime(lastFetchTime, nowMs)} (${new Date(lastFetchTime).toLocaleString()})`
+    : 'No API calls yet';
+
   return (
     <div className="px-6 py-8 text-text">
-      <a className="sr-only focus:not-sr-only" href="#analytics-content">
-        Skip to content
-      </a>
       <section id="analytics-content" className="mx-auto grid max-w-[980px] gap-4">
         <header className="grid gap-1">
           <h1 className="text-2xl font-semibold tracking-tight text-text">MarketPulse Analytics</h1>
@@ -115,17 +211,31 @@ export default function AppClient({
           <StockControls
             tempCompanyId={tempCompanyId}
             tempDate={tempDate}
+            autoRefreshEnabled={autoRefreshEnabled}
+            autoRefreshSeconds={autoRefreshSeconds}
             onTempCompanyIdChange={handleTempCompanyIdChange}
             onTempDateChange={handleTempDateChange}
+            onAutoRefreshEnabledChange={handleAutoRefreshEnabledChange}
+            onAutoRefreshSecondsChange={handleAutoRefreshSecondsChange}
             onSubmit={handleSubmit}
             enabled={Boolean(tempCompanyId && tempDate)}
             loading={loading}
           />
 
-          <div className="last-fetch mb-0">
-            {lastFetchTime
-              ? `Last API call: ${new Date(lastFetchTime).toLocaleString()}`
-              : 'No API calls yet'}
+          <div className="grid gap-2 rounded-md border border-border/40 bg-surface-2/20 px-3 py-2.5">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+              <span className="inline-flex items-center gap-2 font-medium text-text">
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    autoRefreshEnabled ? 'bg-success' : 'bg-text-muted'
+                  }`}
+                  aria-hidden="true"
+                />
+                {statusPillText}
+              </span>
+              <span className="text-text-muted">{nextRefreshText}</span>
+            </div>
+            <div className="last-fetch mb-0">{lastCallText}</div>
           </div>
         </Card>
 
